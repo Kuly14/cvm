@@ -262,10 +262,16 @@ impl<DB: Database> InnerEvmContext<DB> {
         // Create address
         let mut init_code_hash = B256::ZERO;
         let created_address = match inputs.scheme {
-            CreateScheme::Create => inputs.caller.create(old_nonce, self.env.cfg.network_id).to_address(),
+            CreateScheme::Create => inputs
+                .caller
+                .create(old_nonce, self.env.cfg.network_id)
+                .to_address(),
             CreateScheme::Create2 { salt } => {
                 init_code_hash = sha3(&inputs.init_code);
-                inputs.caller.create2(salt.to_be_bytes(), init_code_hash, self.env.cfg.network_id).to_address()
+                inputs
+                    .caller
+                    .create2(salt.to_be_bytes(), init_code_hash, self.env.cfg.network_id)
+                    .to_address()
             }
         };
 

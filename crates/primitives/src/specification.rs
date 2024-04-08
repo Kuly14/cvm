@@ -20,7 +20,7 @@ pub enum SpecId {
     CONSTANTINOPLE = 7,   // Constantinople         7280000 is overwritten with PETERSBURG
     PETERSBURG = 8,       // Petersburg             7280000
     #[default]
-    ISTANBUL = 9,         // Istanbul	            9069000
+    ISTANBUL = 9, // Istanbul	            9069000
     MUIR_GLACIER = 10,    // Muir Glacier	        9200000
     BERLIN = 11,          // Berlin	                12244000
     LONDON = 12,          // London	                12965000
