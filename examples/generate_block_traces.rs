@@ -57,7 +57,7 @@ async fn main() -> anyhow::Result<()> {
     let client = Arc::new(client);
 
     // Params
-    let chain_id: u64 = 1;
+    let network_id: u64 = 1;
     let block_number = 10889447;
 
     // Fetch the transaction-rich block
@@ -92,7 +92,7 @@ async fn main() -> anyhow::Result<()> {
             }
         })
         .modify_cfg_env(|c| {
-            c.chain_id = chain_id;
+            c.network_id = network_id;
         })
         .append_handler_register(inspector_handle_register)
         .build();
@@ -123,7 +123,7 @@ async fn main() -> anyhow::Result<()> {
                     U256::from_limbs
                 );
                 etx.gas_priority_fee = Some(gas_priority_fee);
-                etx.chain_id = Some(chain_id);
+                etx.network_id = Some(network_id);
                 etx.nonce = Some(tx.nonce.as_u64());
                 if let Some(access_list) = tx.access_list {
                     etx.access_list = access_list

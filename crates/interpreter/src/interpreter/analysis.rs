@@ -1,7 +1,7 @@
 use crate::opcode;
 use crate::primitives::{
     bitvec::prelude::{bitvec, BitVec, Lsb0},
-    keccak256, Bytecode, BytecodeState, Bytes, JumpMap, B256, KECCAK_EMPTY,
+    sha3, Bytecode, BytecodeState, Bytes, JumpMap, B256, KECCAK_EMPTY,
 };
 use core::fmt;
 use std::sync::Arc;
@@ -130,7 +130,7 @@ impl BytecodeLocked {
         if self.is_empty() {
             KECCAK_EMPTY
         } else {
-            keccak256(self.original_bytecode_slice())
+            sha3(self.original_bytecode_slice())
         }
     }
 

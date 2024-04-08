@@ -12,7 +12,7 @@ pub use self::secp256k1::ecrecover;
 #[allow(clippy::module_inception)]
 mod secp256k1 {
     use k256::ecdsa::{Error, RecoveryId, Signature, VerifyingKey};
-    use revm_primitives::{alloy_primitives::B512, keccak256, B256};
+    use revm_primitives::{alloy_primitives::B512, sha3, B256};
 
     pub fn ecrecover(sig: &B512, mut recid: u8, msg: &B256) -> Result<B256, Error> {
         // parse signature
@@ -28,7 +28,7 @@ mod secp256k1 {
         // recover key
         let recovered_key = VerifyingKey::recover_from_prehash(&msg[..], &sig, recid)?;
         // hash it
-        let mut hash = keccak256(
+        let mut hash = sha3(
             &recovered_key
                 .to_encoded_point(/* compress = */ false)
                 .as_bytes()[1..],
@@ -43,7 +43,7 @@ mod secp256k1 {
 #[cfg(feature = "secp256k1")]
 #[allow(clippy::module_inception)]
 mod secp256k1 {
-    use revm_primitives::{alloy_primitives::B512, keccak256, B256};
+    use revm_primitives::{alloy_primitives::B512, sha3, B256};
     use secp256k1::{
         ecdsa::{RecoverableSignature, RecoveryId},
         Message, Secp256k1,
@@ -60,7 +60,7 @@ mod secp256k1 {
         let msg = Message::from_digest(msg.0);
         let public = secp.recover_ecdsa(&msg, &sig)?;
 
-        let mut hash = keccak256(&public.serialize_uncompressed()[1..]);
+        let mut hash = sha3(&public.serialize_uncompressed()[1..]);
         hash[..12].fill(0);
         Ok(hash)
     }

@@ -48,7 +48,6 @@ std = [
     "c-kzg?/std",
     "secp256k1?/std",
 ]
-asm-keccak = ["revm-primitives/asm-keccak"]
 
 optimism = ["revm-primitives/optimism"]
 # Optimism default handler enabled Optimism handler register by default in EvmBuilder.

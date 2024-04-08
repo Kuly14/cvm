@@ -1,7 +1,6 @@
 pub use crate::primitives::CreateScheme;
 use crate::primitives::{Address, Bytes, TransactTo, TxEnv, U256};
 use core::ops::Range;
-use std::boxed::Box;
 
 /// Inputs for a call.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -37,6 +36,8 @@ pub struct CreateInputs {
     pub init_code: Bytes,
     /// The gas limit of the call.
     pub gas_limit: u64,
+    /// Network id of the network
+    pub network_id: u64,
 }
 
 impl CallInputs {
@@ -75,7 +76,7 @@ impl CallInputs {
 
 impl CreateInputs {
     /// Creates new create inputs.
-    pub fn new(tx_env: &TxEnv, gas_limit: u64) -> Option<Self> {
+    pub fn new(tx_env: &TxEnv, gas_limit: u64, network_id: u64) -> Option<Self> {
         let TransactTo::Create(scheme) = tx_env.transact_to else {
             return None;
         };
@@ -86,21 +87,24 @@ impl CreateInputs {
             value: tx_env.value,
             init_code: tx_env.data.clone(),
             gas_limit,
+            network_id,
         })
     }
 
     /// Returns boxed create inputs.
-    pub fn new_boxed(tx_env: &TxEnv, gas_limit: u64) -> Option<Box<Self>> {
-        Self::new(tx_env, gas_limit).map(Box::new)
+    pub fn new_boxed(tx_env: &TxEnv, gas_limit: u64, network_id: u64) -> Option<Box<Self>> {
+        Self::new(tx_env, gas_limit, network_id).map(Box::new)
     }
 
     /// Returns the address that this create call will create.
     pub fn created_address(&self, nonce: u64) -> Address {
         match self.scheme {
-            CreateScheme::Create => self.caller.create(nonce),
+            CreateScheme::Create => self.caller.create(nonce, self.network_id).to_address(),
             CreateScheme::Create2 { salt } => self
                 .caller
-                .create2_from_code(salt.to_be_bytes(), &self.init_code),
+                .to_ican(self.network_id)
+                .create2_from_code(salt.to_be_bytes(), &self.init_code)
+                .to_address(),
         }
     }
 }

@@ -7,7 +7,6 @@ use crate::{
     Context, ContextWithHandlerCfg, Evm, Handler,
 };
 use core::marker::PhantomData;
-use std::boxed::Box;
 
 /// Evm Builder allows building or modifying EVM.
 /// Note that some of the methods that changes underlying structures
@@ -38,7 +37,7 @@ impl<'a> Default for EvmBuilder<'a, SetGenericStage, (), EmptyDB> {
                     handler_cfg.is_optimism = true;
 
             } else {
-                let handler_cfg = HandlerCfg::new(SpecId::LATEST);
+                let handler_cfg = HandlerCfg::new(SpecId::ISTANBUL);
             }
         }
 
@@ -604,7 +603,7 @@ mod test {
         let evm = evm.modify().with_spec_id(SpecId::FRONTIER).build();
         let _ = evm
             .modify()
-            .modify_tx_env(|tx| tx.chain_id = Some(2))
+            .modify_tx_env(|tx| tx.network_id = Some(2))
             .build();
     }
 

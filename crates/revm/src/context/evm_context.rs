@@ -11,7 +11,6 @@ use core::{
     fmt,
     ops::{Deref, DerefMut},
 };
-use std::boxed::Box;
 
 /// EVM context that contains the inner EVM context and precompiles.
 pub struct EvmContext<DB: Database> {
@@ -227,7 +226,6 @@ pub(crate) mod test_utils {
         primitives::{address, Address, Bytes, Env, HashSet, SpecId, B256, U256},
         InnerEvmContext,
     };
-    use std::boxed::Box;
 
     /// Mock caller address.
     pub const MOCK_CALLER: Address = address!("0000000000000000000000000000000000000000");
@@ -320,7 +318,6 @@ mod tests {
         primitives::{address, Bytecode, Bytes, Env, U256},
         Frame, FrameOrResult, JournalEntry,
     };
-    use std::boxed::Box;
 
     // Tests that the `EVMContext::make_call_frame` function returns an error if the
     // call stack is too deep.

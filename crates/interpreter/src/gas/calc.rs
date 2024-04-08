@@ -1,7 +1,6 @@
 use super::constants::*;
 use crate::inner_models::SelfDestructResult;
 use crate::primitives::{Address, SpecId, U256};
-use std::vec::Vec;
 
 /// `const` Option `?`.
 macro_rules! tri {
@@ -168,7 +167,7 @@ pub const fn log_cost(n: u8, len: u64) -> Option<u64> {
 
 /// `KECCAK256` opcode cost calculation.
 #[inline]
-pub const fn keccak256_cost(len: u64) -> Option<u64> {
+pub const fn sha3_cost(len: u64) -> Option<u64> {
     KECCAK256.checked_add(tri!(cost_per_word(len, KECCAK256WORD)))
 }
 

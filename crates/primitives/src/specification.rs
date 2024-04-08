@@ -19,6 +19,7 @@ pub enum SpecId {
     BYZANTIUM = 6,        // Byzantium	            4370000
     CONSTANTINOPLE = 7,   // Constantinople         7280000 is overwritten with PETERSBURG
     PETERSBURG = 8,       // Petersburg             7280000
+    #[default]
     ISTANBUL = 9,         // Istanbul	            9069000
     MUIR_GLACIER = 10,    // Muir Glacier	        9200000
     BERLIN = 11,          // Berlin	                12244000
@@ -28,7 +29,6 @@ pub enum SpecId {
     MERGE = 15,           // Paris/Merge	        15537394 (TTD: 58750000000000000000000)
     SHANGHAI = 16,        // Shanghai	            17034870 (TS: 1681338455)
     CANCUN = 17,          // Cancun	                TBD
-    #[default]
     LATEST = u8::MAX,
 }
 

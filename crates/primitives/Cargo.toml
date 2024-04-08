@@ -17,7 +17,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-alloy-primitives = { version = "0.7", default-features = false, features = [
+alloy-primitives = { git = "https://github.com/core-coin/base-rs/",  default-features = false, features = [
     "rlp",
 ] }
 hashbrown = "0.14"
@@ -63,7 +63,6 @@ serde = [
     "c-kzg?/serde",
 ]
 arbitrary = ["std", "alloy-primitives/arbitrary", "bitflags/arbitrary"]
-asm-keccak = ["alloy-primitives/asm-keccak"]
 portable = ["c-kzg?/portable"]
 
 optimism = []

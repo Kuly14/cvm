@@ -8,7 +8,7 @@ use revm_precompile::{
     secp256k1::ec_recover_run,
     Bytes,
 };
-use revm_primitives::{hex, keccak256, Env, U256, VERSIONED_HASH_VERSION_KZG};
+use revm_primitives::{hex, sha3, Env, U256, VERSIONED_HASH_VERSION_KZG};
 use secp256k1::{Message, SecretKey, SECP256K1};
 use sha2::{Digest, Sha256};
 
@@ -52,7 +52,7 @@ pub fn benchmark_crypto_precompiles(c: &mut Criterion) {
 
     // generate secp256k1 signature
     let data = hex::decode("1337133713371337").unwrap();
-    let hash = keccak256(data);
+    let hash = sha3(data);
     let secret_key = SecretKey::new(&mut rand::thread_rng());
 
     let message = Message::from_digest_slice(&hash[..]).unwrap();

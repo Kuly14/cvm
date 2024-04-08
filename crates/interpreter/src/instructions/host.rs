@@ -11,7 +11,6 @@ use crate::{
 };
 use core::cmp::min;
 use revm_primitives::BLOCK_HASH_HISTORY;
-use std::{boxed::Box, vec::Vec};
 
 pub fn balance<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     pop_address!(interpreter, address);
@@ -312,6 +311,7 @@ pub fn create<const IS_CREATE2: bool, H: Host + ?Sized, SPEC: Spec>(
             value,
             init_code: code,
             gas_limit,
+            network_id: host.env().cfg.network_id,
         }),
     };
     interpreter.instruction_result = InstructionResult::CallOrCreate;

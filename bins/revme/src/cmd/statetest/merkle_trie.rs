@@ -3,14 +3,14 @@ use hash_db::Hasher;
 use plain_hasher::PlainHasher;
 use revm::{
     db::PlainAccount,
-    primitives::{keccak256, Address, Log, B256, U256},
+    primitives::{sha3, Address, Log, B256, U256},
 };
 use triehash::sec_trie_root;
 
 pub fn log_rlp_hash(logs: &[Log]) -> B256 {
     let mut out = Vec::with_capacity(alloy_rlp::list_length(logs));
     alloy_rlp::encode_list(logs, &mut out);
-    keccak256(&out)
+    sha3(&out)
 }
 
 pub fn state_merkle_trie_root<'a>(
@@ -68,6 +68,6 @@ impl Hasher for KeccakHasher {
 
     #[inline]
     fn hash(x: &[u8]) -> Self::Out {
-        keccak256(x)
+        sha3(x)
     }
 }

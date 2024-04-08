@@ -7,11 +7,7 @@ use revm_interpreter::primitives::{
     db::{Database, DatabaseCommit},
     hash_map, Account, AccountInfo, Address, Bytecode, HashMap, B256, BLOCK_HASH_HISTORY, U256,
 };
-use std::{
-    boxed::Box,
-    collections::{btree_map, BTreeMap},
-    vec::Vec,
-};
+use std::collections::{btree_map, BTreeMap};
 
 /// Database boxed with a lifetime and Send.
 pub type DBBox<'a, E> = Box<dyn Database<Error = E> + Send + 'a>;
@@ -305,7 +301,7 @@ mod tests {
         states::reverts::AccountInfoRevert, AccountRevert, AccountStatus, BundleAccount,
         RevertToSlot,
     };
-    use revm_interpreter::primitives::{keccak256, StorageSlot};
+    use revm_interpreter::primitives::{sha3, StorageSlot};
 
     #[test]
     fn block_hash_cache() {
@@ -315,9 +311,9 @@ mod tests {
 
         let test_number = BLOCK_HASH_HISTORY as u64 + 2;
 
-        let block1_hash = keccak256(U256::from(1).to_string().as_bytes());
-        let block2_hash = keccak256(U256::from(2).to_string().as_bytes());
-        let block_test_hash = keccak256(U256::from(test_number).to_string().as_bytes());
+        let block1_hash = sha3(U256::from(1).to_string().as_bytes());
+        let block2_hash = sha3(U256::from(2).to_string().as_bytes());
+        let block_test_hash = sha3(U256::from(test_number).to_string().as_bytes());
 
         assert_eq!(
             state.block_hashes,

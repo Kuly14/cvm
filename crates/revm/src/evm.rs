@@ -15,7 +15,6 @@ use crate::{
 };
 use core::fmt;
 use revm_interpreter::{CallInputs, CreateInputs};
-use std::vec::Vec;
 
 /// EVM call stack limit.
 pub const CALL_STACK_LIMIT: u64 = 1024;
@@ -354,7 +353,7 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
             )?,
             TransactTo::Create(_) => exec.create(
                 ctx,
-                CreateInputs::new_boxed(&ctx.evm.env.tx, gas_limit).unwrap(),
+                CreateInputs::new_boxed(&ctx.evm.env.tx, gas_limit, ctx.evm.env.cfg.network_id).unwrap(),
             )?,
         };
 

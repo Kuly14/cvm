@@ -6,7 +6,7 @@ use crate::{
     },
     journaled_state::JournaledState,
     primitives::{
-        keccak256, Account, Address, AnalysisKind, Bytecode, Bytes, CreateScheme, EVMError, Env,
+        sha3, Account, Address, AnalysisKind, Bytecode, Bytes, CreateScheme, EVMError, Env,
         HashSet, Spec,
         SpecId::{self, *},
         B256, U256,
@@ -14,7 +14,6 @@ use crate::{
     FrameOrResult, JournalCheckpoint, CALL_STACK_LIMIT,
 };
 use revm_interpreter::{SStoreResult, SelfDestructResult};
-use std::boxed::Box;
 
 /// EVM contexts contains data that EVM needs for execution.
 #[derive(Debug)]
@@ -263,10 +262,10 @@ impl<DB: Database> InnerEvmContext<DB> {
         // Create address
         let mut init_code_hash = B256::ZERO;
         let created_address = match inputs.scheme {
-            CreateScheme::Create => inputs.caller.create(old_nonce),
+            CreateScheme::Create => inputs.caller.create(old_nonce, self.env.cfg.network_id).to_address(),
             CreateScheme::Create2 { salt } => {
-                init_code_hash = keccak256(&inputs.init_code);
-                inputs.caller.create2(salt.to_be_bytes(), init_code_hash)
+                init_code_hash = sha3(&inputs.init_code);
+                inputs.caller.create2(salt.to_be_bytes(), init_code_hash, self.env.cfg.network_id).to_address()
             }
         };
 

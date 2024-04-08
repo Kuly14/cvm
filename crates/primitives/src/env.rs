@@ -8,8 +8,6 @@ use crate::{
     VERSIONED_HASH_VERSION_KZG,
 };
 use core::cmp::{min, Ordering};
-use std::boxed::Box;
-use std::vec::Vec;
 
 /// EVM environment configuration.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
@@ -127,8 +125,8 @@ impl Env {
         }
 
         // Check if the transaction's chain id is correct
-        if let Some(tx_chain_id) = self.tx.chain_id {
-            if tx_chain_id != self.cfg.chain_id {
+        if let Some(tx_network_id) = self.tx.network_id {
+            if tx_network_id != self.cfg.network_id {
                 return Err(InvalidTransaction::InvalidChainId);
             }
         }
@@ -252,7 +250,7 @@ impl Env {
 pub struct CfgEnv {
     /// Chain ID of the EVM, it will be compared to the transaction's Chain ID.
     /// Chain ID is introduced EIP-155
-    pub chain_id: u64,
+    pub network_id: u64,
     /// KZG Settings for point evaluation precompile. By default, this is loaded from the ethereum mainnet trusted setup.
     #[cfg(feature = "c-kzg")]
     #[cfg_attr(feature = "serde", serde(skip))]
@@ -366,7 +364,7 @@ impl CfgEnv {
 impl Default for CfgEnv {
     fn default() -> Self {
         Self {
-            chain_id: 1,
+            network_id: 1,
             perf_analyse_created_bytecodes: AnalysisKind::default(),
             limit_contract_code_size: None,
             #[cfg(feature = "c-kzg")]
@@ -508,7 +506,7 @@ pub struct TxEnv {
     /// Incorporated as part of the Spurious Dragon upgrade via [EIP-155].
     ///
     /// [EIP-155]: https://eips.ethereum.org/EIPS/eip-155
-    pub chain_id: Option<u64>,
+    pub network_id: Option<u64>,
 
     /// A list of addresses and storage keys that the transaction plans to access.
     ///
@@ -570,7 +568,7 @@ impl Default for TxEnv {
             transact_to: TransactTo::Call(Address::ZERO), // will do nothing
             value: U256::ZERO,
             data: Bytes::new(),
-            chain_id: None,
+            network_id: None,
             nonce: None,
             access_list: Vec::new(),
             blob_hashes: Vec::new(),
@@ -713,10 +711,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_validate_tx_chain_id() {
+    fn test_validate_tx_network_id() {
         let mut env = Env::default();
-        env.tx.chain_id = Some(1);
-        env.cfg.chain_id = 2;
+        env.tx.network_id = Some(1);
+        env.cfg.network_id = 2;
         assert_eq!(
             env.validate_tx::<crate::LatestSpec>(),
             Err(InvalidTransaction::InvalidChainId)

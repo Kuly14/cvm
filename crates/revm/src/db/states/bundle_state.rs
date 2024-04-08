@@ -8,10 +8,7 @@ use revm_interpreter::primitives::{
     hash_map::{self, Entry},
     AccountInfo, Address, Bytecode, HashMap, HashSet, StorageSlot, B256, KECCAK_EMPTY, U256,
 };
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    vec::Vec,
-};
+use std::collections::{BTreeMap, BTreeSet};
 
 /// This builder is used to help to facilitate the initialization of `BundleState` struct
 #[derive(Debug)]

@@ -1,10 +1,10 @@
-use crate::{hex, keccak256, Bytes, B256, KECCAK_EMPTY};
+use crate::{hex, sha3, Bytes, B256, KECCAK_EMPTY};
 use bitvec::{
     prelude::{bitvec, Lsb0},
     vec::BitVec,
 };
 use core::fmt::Debug;
-use std::{sync::Arc, vec::Vec};
+use std::sync::Arc;
 
 /// A map of valid `jump` destinations.
 #[derive(Clone, Default, PartialEq, Eq, Hash)]
@@ -92,7 +92,7 @@ impl Bytecode {
         if self.is_empty() {
             KECCAK_EMPTY
         } else {
-            keccak256(&self.original_bytes())
+            sha3(&self.original_bytes())
         }
     }
 

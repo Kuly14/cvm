@@ -1,9 +1,8 @@
 use core::{convert::Infallible, fmt, marker::PhantomData};
 use revm_interpreter::primitives::{
     db::{Database, DatabaseRef},
-    keccak256, AccountInfo, Address, Bytecode, B256, U256,
+    sha3, AccountInfo, Address, Bytecode, B256, U256,
 };
-use std::string::ToString;
 
 /// An empty database that always returns default values when queried.
 pub type EmptyDB = EmptyDBTyped<Infallible>;
@@ -103,7 +102,7 @@ impl<E> DatabaseRef for EmptyDBTyped<E> {
 
     #[inline]
     fn block_hash_ref(&self, number: U256) -> Result<B256, Self::Error> {
-        Ok(keccak256(number.to_string().as_bytes()))
+        Ok(sha3(number.to_string().as_bytes()))
     }
 }
 
@@ -118,21 +117,21 @@ mod tests {
         assert_eq!(
             db.block_hash_ref(U256::from(0)),
             Ok(b256!(
-                "044852b2a670ade5407e78fb2863c51de9fcb96542a07186fe3aeda6bb8a116d"
+                "f9e2eaaa42d9fe9e558a9b8ef1bf366f190aacaa83bad2641ee106e9041096e4"
             ))
         );
 
         assert_eq!(
             db.block_hash_ref(U256::from(1)),
             Ok(b256!(
-                "c89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc6"
+                "67b176705b46206614219f47a05aee7ae6a3edbe850bbbe214c536b989aea4d2"
             ))
         );
 
         assert_eq!(
             db.block_hash_ref(U256::from(100)),
             Ok(b256!(
-                "8c18210df0d9514f2d2e5d8ca7c100978219ee80d3968ad850ab5ead208287b3"
+                "46b55626ab805350ea5f08f3592bd81298c12f2fee1d6040d1b8b3c7b490d966"
             ))
         );
     }

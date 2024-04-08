@@ -10,7 +10,7 @@ use revm::{
     inspectors::TracerEip3155,
     interpreter::CreateScheme,
     primitives::{
-        calc_excess_blob_gas, keccak256, Bytecode, Bytes, EVMResultGeneric, Env, ExecutionResult,
+        calc_excess_blob_gas, sha3, Bytecode, Bytes, EVMResultGeneric, Env, ExecutionResult,
         SpecId, TransactTo, B256, U256,
     },
     Evm, State,
@@ -233,7 +233,7 @@ pub fn execute_test_suite(
         for (address, info) in unit.pre {
             let acc_info = revm::primitives::AccountInfo {
                 balance: info.balance,
-                code_hash: keccak256(&info.code),
+                code_hash: sha3(&info.code),
                 code: Some(Bytecode::new_raw(info.code)),
                 nonce: info.nonce,
             };
@@ -242,7 +242,7 @@ pub fn execute_test_suite(
 
         let mut env = Box::<Env>::default();
         // for mainnet
-        env.cfg.chain_id = 1;
+        env.cfg.network_id = 1;
         // env.cfg.spec_id is set down the road
 
         // block env

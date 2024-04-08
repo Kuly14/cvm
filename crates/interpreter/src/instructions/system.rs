@@ -4,16 +4,16 @@ use crate::{
     Host, InstructionResult, Interpreter,
 };
 
-pub fn keccak256<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
+pub fn sha3<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
     pop!(interpreter, from, len);
     let len = as_usize_or_fail!(interpreter, len);
-    gas_or_fail!(interpreter, gas::keccak256_cost(len as u64));
+    gas_or_fail!(interpreter, gas::sha3_cost(len as u64));
     let hash = if len == 0 {
         KECCAK_EMPTY
     } else {
         let from = as_usize_or_fail!(interpreter, from);
         resize_memory!(interpreter, from, len);
-        crate::primitives::keccak256(interpreter.shared_memory.slice(from, len))
+        crate::primitives::sha3(interpreter.shared_memory.slice(from, len))
     };
 
     push_b256!(interpreter, hash);

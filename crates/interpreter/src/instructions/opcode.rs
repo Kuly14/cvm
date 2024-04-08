@@ -7,7 +7,6 @@ use crate::{
     Host, Interpreter,
 };
 use core::fmt;
-use std::boxed::Box;
 
 /// EVM opcode function signature.
 pub type Instruction<H> = fn(&mut Interpreter, &mut H);
@@ -203,7 +202,7 @@ opcodes! {
     0x1D => SAR    => bitwise::sar::<H, SPEC>,
     // 0x1E
     // 0x1F
-    0x20 => KECCAK256 => system::keccak256,
+    0x20 => KECCAK256 => system::sha3,
     // 0x21
     // 0x22
     // 0x23
