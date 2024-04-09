@@ -1,69 +1,28 @@
 use crate::{utilities::right_pad, Error, Precompile, PrecompileResult, PrecompileWithAddress};
-use revm_primitives::{alloy_primitives::B512, Bytes, B256};
+use libgoldilocks::goldilocks::ed448_verify_with_error;
+use revm_primitives::{alloy_primitives::B1368, sha3, Bytes, B256};
 
 pub const ECRECOVER: PrecompileWithAddress = PrecompileWithAddress(
     crate::u64_to_address(1),
     Precompile::Standard(ec_recover_run),
 );
 
-pub use self::secp256k1::ecrecover;
+pub fn ecrecover(
+    sig: &B1368,
+    msg: &B256,
+) -> Result<B256, libgoldilocks::errors::LibgoldilockErrors> {
+    let mut sig_bytes = [0u8; 114];
+    let mut pub_bytes = [0u8; 57];
+    sig_bytes.copy_from_slice(&sig[0..114]);
+    pub_bytes.copy_from_slice(&sig[114..171]);
 
-#[cfg(not(feature = "secp256k1"))]
-#[allow(clippy::module_inception)]
-mod secp256k1 {
-    use k256::ecdsa::{Error, RecoveryId, Signature, VerifyingKey};
-    use revm_primitives::{alloy_primitives::B512, sha3, B256};
+    // Not sure whether this returns address(0) on invliad message
+    ed448_verify_with_error(&pub_bytes, &sig_bytes, msg.as_ref())?;
 
-    pub fn ecrecover(sig: &B512, mut recid: u8, msg: &B256) -> Result<B256, Error> {
-        // parse signature
-        let mut sig = Signature::from_slice(sig.as_slice())?;
-
-        // normalize signature and flip recovery id if needed.
-        if let Some(sig_normalized) = sig.normalize_s() {
-            sig = sig_normalized;
-            recid ^= 1;
-        }
-        let recid = RecoveryId::from_byte(recid).expect("recovery ID is valid");
-
-        // recover key
-        let recovered_key = VerifyingKey::recover_from_prehash(&msg[..], &sig, recid)?;
-        // hash it
-        let mut hash = sha3(
-            &recovered_key
-                .to_encoded_point(/* compress = */ false)
-                .as_bytes()[1..],
-        );
-
-        // truncate to 20 bytes
-        hash[..12].fill(0);
-        Ok(hash)
-    }
-}
-
-#[cfg(feature = "secp256k1")]
-#[allow(clippy::module_inception)]
-mod secp256k1 {
-    use revm_primitives::{alloy_primitives::B512, sha3, B256};
-    use secp256k1::{
-        ecdsa::{RecoverableSignature, RecoveryId},
-        Message, Secp256k1,
-    };
-
-    // Silence the unused crate dependency warning.
-    use k256 as _;
-
-    pub fn ecrecover(sig: &B512, recid: u8, msg: &B256) -> Result<B256, secp256k1::Error> {
-        let recid = RecoveryId::from_i32(recid as i32).expect("recovery ID is valid");
-        let sig = RecoverableSignature::from_compact(sig.as_slice(), recid)?;
-
-        let secp = Secp256k1::new();
-        let msg = Message::from_digest(msg.0);
-        let public = secp.recover_ecdsa(&msg, &sig)?;
-
-        let mut hash = sha3(&public.serialize_uncompressed()[1..]);
-        hash[..12].fill(0);
-        Ok(hash)
-    }
+    let mut hash = sha3(pub_bytes);
+    // truncate to 20 bytes
+    hash[..12].fill(0);
+    Ok(hash)
 }
 
 pub fn ec_recover_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
@@ -73,19 +32,50 @@ pub fn ec_recover_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
         return Err(Error::OutOfGas);
     }
 
-    let input = right_pad::<128>(input);
-
-    // `v` must be a 32-byte big-endian integer equal to 27 or 28.
-    if !(input[32..63].iter().all(|&b| b == 0) && matches!(input[63], 27 | 28)) {
-        return Ok((ECRECOVER_BASE, Bytes::new()));
-    }
+    let input = right_pad::<267>(input);
 
     let msg = <&B256>::try_from(&input[0..32]).unwrap();
-    let recid = input[63] - 27;
-    let sig = <&B512>::try_from(&input[64..128]).unwrap();
+    let sig = <&B1368>::try_from(&input[96..32 * 3 + 171]).unwrap();
 
-    let out = secp256k1::ecrecover(sig, recid, msg)
+    let out = ecrecover(sig, msg)
         .map(|o| o.to_vec().into())
         .unwrap_or_default();
     Ok((ECRECOVER_BASE, out))
+}
+
+#[cfg(test)]
+mod tests {
+    // use super::*;
+    use crate::{
+        secp256k1::{ec_recover_run, ecrecover},
+        Bytes, B256,
+    };
+
+    #[test]
+    fn test_recover() {
+        let sig = hex::decode("611d178b128095022653965eb0ed3bc8bbea8e7891b5a121a102a5b29bb895770d204354dbbc67c5567186f92cdb58a601397dfe0022e0ce002c1333b6829c37c732fb909501f719df200ceaaa0e0a1533dc22e4c9c999406c071fee2858bc7c76c66d113ff1ac739564d465cd541b0d1e003761457fcdd53dba3dea5848c43aa54fe468284319f032945a3acb9bd4cd0fa7b7c901d978e9acd9eca43fa5b3c32b648c33dcc3f3169e8080").unwrap();
+        let sig: [u8; 171] = sig.try_into().unwrap();
+        let msg = hex::decode("f092a4af1f2103fe7be067df44370097c444f3bf877783ba56f21cf70ba365a3")
+            .unwrap();
+        let msg: [u8; 32] = msg.try_into().unwrap();
+        let msg = B256::from(msg);
+        let recovered = ecrecover((&sig).into(), &msg).unwrap();
+        let expected: [u8; 32] =
+            hex::decode("000000000000000000000000fc37a3b370a1f22e2fe2f819c210895e098845ed")
+                .unwrap()
+                .try_into()
+                .unwrap();
+        assert_eq!(recovered, expected);
+    }
+
+    #[test]
+    fn test_ecrecover() {
+        let sig = hex::decode("f092a4af1f2103fe7be067df44370097c444f3bf877783ba56f21cf70ba365a300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000611d178b128095022653965eb0ed3bc8bbea8e7891b5a121a102a5b29bb895770d204354dbbc67c5567186f92cdb58a601397dfe0022e0ce002c1333b6829c37c732fb909501f719df200ceaaa0e0a1533dc22e4c9c999406c071fee2858bc7c76c66d113ff1ac739564d465cd541b0d1e003761457fcdd53dba3dea5848c43aa54fe468284319f032945a3acb9bd4cd0fa7b7c901d978e9acd9eca43fa5b3c32b648c33dcc3f3169e8080").unwrap();
+        let recovered = ec_recover_run(&sig.into(), 5000).unwrap().1;
+        let expected: Bytes =
+            hex::decode("000000000000000000000000fc37a3b370a1f22e2fe2f819c210895e098845ed")
+                .unwrap()
+                .into();
+        assert_eq!(recovered, expected);
+    }
 }
