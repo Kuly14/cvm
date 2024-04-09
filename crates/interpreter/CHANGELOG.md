@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.0](https://github.com/Kuly14/cvm/compare/revm-interpreter-v4.0.0...revm-interpreter-v5.0.0) - 2024-04-09
+
+### Added
+- Make ecrecover compatible with core blockchain ([#2](https://github.com/Kuly14/cvm/pull/2))
+- *(interpreter)* remove SPEC generic from gas calculation functions ([#1243](https://github.com/Kuly14/cvm/pull/1243))
+- *(interpreter)* test Host object-safety, allow `dyn Host` in instructions ([#1245](https://github.com/Kuly14/cvm/pull/1245))
+
+### Other
+- Make revm compatible with core blockchain
+
 ## [4.0.0](https://github.com/bluealloy/revm/compare/revm-interpreter-v3.4.0...revm-interpreter-v4.0.0) - 2024-04-02
 
 ### Added
