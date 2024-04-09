@@ -1,6 +1,7 @@
 use super::constants::*;
 use crate::inner_models::SelfDestructResult;
 use crate::primitives::{Address, SpecId, U256};
+use std::vec::Vec;
 
 /// `const` Option `?`.
 macro_rules! tri {

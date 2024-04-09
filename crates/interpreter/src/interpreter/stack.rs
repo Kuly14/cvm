@@ -3,6 +3,7 @@ use crate::{
     InstructionResult,
 };
 use core::fmt;
+use std::vec::Vec;
 
 /// EVM interpreter stack limit.
 pub const STACK_LIMIT: usize = 1024;

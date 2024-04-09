@@ -7,6 +7,7 @@ pub use analysis::BytecodeLocked;
 pub use contract::Contract;
 pub use shared_memory::{next_multiple_of_32, SharedMemory, EMPTY_SHARED_MEMORY};
 pub use stack::{Stack, STACK_LIMIT};
+use std::{borrow::ToOwned, boxed::Box};
 
 use crate::{
     primitives::Bytes, push, push_b256, return_ok, return_revert, CallInputs, CallOutcome,

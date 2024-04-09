@@ -4,7 +4,7 @@ use bitvec::{
     vec::BitVec,
 };
 use core::fmt::Debug;
-use std::sync::Arc;
+use std::{sync::Arc, vec::Vec};
 
 /// A map of valid `jump` destinations.
 #[derive(Clone, Default, PartialEq, Eq, Hash)]
