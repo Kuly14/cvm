@@ -8,13 +8,14 @@ use revm::db::{CacheDB, EthersDB, StateBuilder};
 use revm::inspectors::TracerEip3155;
 use revm::primitives::{Address, TransactTo, U256};
 use revm::{inspector_handle_register, Evm};
+use std::boxed::Box;
 use std::fs::OpenOptions;
 use std::io::BufWriter;
 use std::io::Write;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Instant;
-
+use std::vec::Vec;
 macro_rules! local_fill {
     ($left:expr, $right:expr, $fun:expr) => {
         if let Some(right) = $right {

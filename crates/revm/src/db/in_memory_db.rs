@@ -5,6 +5,7 @@ use crate::primitives::{
 };
 use crate::Database;
 use core::convert::Infallible;
+use std::vec::Vec;
 
 /// A [Database] implementation that stores all state changes in memory.
 pub type InMemoryDB = CacheDB<EmptyDB>;

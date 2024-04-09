@@ -6,6 +6,7 @@ use crate::primitives::{
 use core::mem;
 use revm_interpreter::primitives::SpecId;
 use revm_interpreter::SStoreResult;
+use std::vec::Vec;
 
 /// JournalState is internal EVM state that is used to contain state and track changes to that state.
 /// It contains journal of changes that happened to state so that they can be reverted.

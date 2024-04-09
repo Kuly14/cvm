@@ -11,6 +11,7 @@ use core::{
     fmt,
     ops::{Deref, DerefMut},
 };
+use std::boxed::Box;
 
 /// EVM context that contains the inner EVM context and precompiles.
 pub struct EvmContext<DB: Database> {

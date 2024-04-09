@@ -16,6 +16,8 @@ use revm::{
     Evm, State,
 };
 use serde_json::json;
+use std::boxed::Box;
+use std::vec::Vec;
 use std::{
     convert::Infallible,
     io::{stderr, stdout},

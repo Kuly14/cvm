@@ -14,6 +14,7 @@ use crate::{
     FrameOrResult, JournalCheckpoint, CALL_STACK_LIMIT,
 };
 use revm_interpreter::{SStoreResult, SelfDestructResult};
+use std::boxed::Box;
 
 /// EVM contexts contains data that EVM needs for execution.
 #[derive(Debug)]

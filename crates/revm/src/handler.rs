@@ -7,14 +7,14 @@ pub mod register;
 pub use handle_types::*;
 
 // Includes.
+use self::register::{HandleRegister, HandleRegisterBox};
 use crate::{
     interpreter::{opcode::InstructionTables, Host},
     primitives::{db::Database, spec_to_generic, HandlerCfg, Spec, SpecId},
     Evm,
 };
 use register::{EvmHandler, HandleRegisters};
-
-use self::register::{HandleRegister, HandleRegisterBox};
+use std::vec::Vec;
 
 /// Handler acts as a proxy and allow to define different behavior for different
 /// sections of the code. This allows nice integration of different chains or

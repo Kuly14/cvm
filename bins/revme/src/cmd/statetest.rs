@@ -7,6 +7,7 @@ pub use runner::TestError as Error;
 
 use runner::{find_all_json_tests, run, TestError};
 use std::path::PathBuf;
+use std::vec::Vec;
 use structopt::StructOpt;
 
 /// Statetest command

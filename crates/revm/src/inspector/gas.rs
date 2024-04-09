@@ -98,6 +98,7 @@ mod tests {
         primitives::Log,
         Database, EvmContext, Inspector,
     };
+    use std::vec::Vec;
 
     #[derive(Default, Debug)]
     struct StackInspector {

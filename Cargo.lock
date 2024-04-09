@@ -47,29 +47,7 @@ checksum = "0942ffc6dcaadf03badf6e6a2d0228460359d5e34b57ccdc720b7382dfbd5ec5"
 [[package]]
 name = "alloy-primitives"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99bbad0a6b588ef4aec1b5ddbbfdacd9ef04e00b979617765b03174318ee1f3a"
-dependencies = [
- "alloy-rlp",
- "bytes",
- "cfg-if",
- "const-hex",
- "derive_more",
- "hex-literal",
- "itoa",
- "k256",
- "keccak-asm",
- "proptest",
- "rand",
- "ruint 1.12.1",
- "serde",
- "tiny-keccak",
-]
-
-[[package]]
-name = "alloy-primitives"
-version = "0.7.0"
-source = "git+https://github.com/core-coin/base-rs/#af6ac1b1bfe91b3fa87b15e37badcb92a6be8aa0"
+source = "git+https://github.com/core-coin/base-rs#1527526634dc46decf30826b2485275f10f8e4d8"
 dependencies = [
  "alloy-rlp",
  "arbitrary",
@@ -85,7 +63,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand",
- "ruint 1.12.2",
+ "ruint",
  "serde",
  "tiny-keccak",
 ]
@@ -115,8 +93,7 @@ dependencies = [
 [[package]]
 name = "alloy-sol-macro"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "452d929748ac948a10481fff4123affead32c553cf362841c5103dd508bdfc16"
+source = "git+https://github.com/core-coin/base-rs#1527526634dc46decf30826b2485275f10f8e4d8"
 dependencies = [
  "alloy-sol-macro-input",
  "const-hex",
@@ -133,8 +110,7 @@ dependencies = [
 [[package]]
 name = "alloy-sol-macro-input"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df64e094f6d2099339f9e82b5b38440b159757b6920878f28316243f8166c8d1"
+source = "git+https://github.com/core-coin/base-rs#1527526634dc46decf30826b2485275f10f8e4d8"
 dependencies = [
  "const-hex",
  "dunce",
@@ -148,10 +124,9 @@ dependencies = [
 [[package]]
 name = "alloy-sol-types"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43bc2d6dfc2a19fd56644494479510f98b1ee929e04cf0d4aa45e98baa3e545b"
+source = "git+https://github.com/core-coin/base-rs#1527526634dc46decf30826b2485275f10f8e4d8"
 dependencies = [
- "alloy-primitives 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "alloy-primitives",
  "alloy-sol-macro",
  "const-hex",
  "serde",
@@ -1691,16 +1666,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "keccak-asm"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb8515fff80ed850aea4a1595f2e519c003e2a00a82fe168ebf5269196caf444"
-dependencies = [
- "digest 0.10.7",
- "sha3-asm",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1714,6 +1679,17 @@ name = "libc"
 version = "0.2.153"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c198f91728a82281a64e1f4f9eeb25d82cb32a5de251c6bd1b5154d63a8e7bd"
+
+[[package]]
+name = "libgoldilocks"
+version = "0.1.0"
+source = "git+https://github.com/core-coin/ed448-rs#6f4c75e46e832800836790128f209561fdb9efbe"
+dependencies = [
+ "hex",
+ "rand",
+ "sha3",
+ "thiserror",
+]
 
 [[package]]
 name = "libm"
@@ -2392,12 +2368,12 @@ dependencies = [
  "aurora-engine-modexp",
  "c-kzg",
  "criterion",
- "k256",
+ "hex",
+ "libgoldilocks",
  "once_cell",
  "rand",
  "revm-primitives",
  "ripemd",
- "secp256k1",
  "sha2",
  "substrate-bn",
 ]
@@ -2406,7 +2382,7 @@ dependencies = [
 name = "revm-primitives"
 version = "3.1.1"
 dependencies = [
- "alloy-primitives 0.7.0 (git+https://github.com/core-coin/base-rs/)",
+ "alloy-primitives",
  "auto_impl",
  "bitflags 2.5.0",
  "bitvec",
@@ -2444,7 +2420,7 @@ dependencies = [
  "hashbrown",
  "hex",
  "indicatif",
- "k256",
+ "libgoldilocks",
  "microbench",
  "plain_hasher",
  "revm",
@@ -2529,30 +2505,6 @@ dependencies = [
 
 [[package]]
 name = "ruint"
-version = "1.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f308135fef9fc398342da5472ce7c484529df23743fb7c734e0f3d472971e62"
-dependencies = [
- "alloy-rlp",
- "ark-ff 0.3.0",
- "ark-ff 0.4.2",
- "bytes",
- "fastrlp",
- "num-bigint",
- "num-traits",
- "parity-scale-codec",
- "primitive-types",
- "proptest",
- "rand",
- "rlp",
- "ruint-macro 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde",
- "valuable",
- "zeroize",
-]
-
-[[package]]
-name = "ruint"
 version = "1.12.2"
 source = "git+https://github.com/Kuly14/uint.git#a471247231fb197e7679de19c85a80e949432f4b"
 dependencies = [
@@ -2569,17 +2521,11 @@ dependencies = [
  "proptest",
  "rand",
  "rlp",
- "ruint-macro 1.2.0 (git+https://github.com/Kuly14/uint.git)",
+ "ruint-macro",
  "serde",
  "valuable",
  "zeroize",
 ]
-
-[[package]]
-name = "ruint-macro"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f86854cf50259291520509879a5c294c3c9a4c334e9ff65071c51e42ef1e2343"
 
 [[package]]
 name = "ruint-macro"
@@ -2742,25 +2688,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "secp256k1"
-version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e0cc0f1cf93f4969faf3ea1c7d8a9faed25918d96affa959720823dfe86d4f3"
-dependencies = [
- "rand",
- "secp256k1-sys",
-]
-
-[[package]]
-name = "secp256k1-sys"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1433bd67156263443f14d603720b082dd3121779323fce20cba2aa07b874bc1b"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "semver"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2870,16 +2797,6 @@ checksum = "75872d278a8f37ef87fa0ddbda7802605cb18344497949862c0d4dcb291eba60"
 dependencies = [
  "digest 0.10.7",
  "keccak",
-]
-
-[[package]]
-name = "sha3-asm"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bac61da6b35ad76b195eb4771210f947734321a8d81d7738e1580d953bc7a15e"
-dependencies = [
- "cc",
- "cfg-if",
 ]
 
 [[package]]
@@ -3053,8 +2970,7 @@ dependencies = [
 [[package]]
 name = "syn-solidity"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4497156948bd342b52038035a6fa514a89626e37af9d2c52a5e8d8ebcc7ee479"
+source = "git+https://github.com/core-coin/base-rs#1527526634dc46decf30826b2485275f10f8e4d8"
 dependencies = [
  "paste",
  "proc-macro2",

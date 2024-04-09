@@ -31,4 +31,4 @@ structopt = "0.3"
 thiserror = "1.0"
 triehash = "0.8"
 walkdir = "2.5"
-k256 = { version = "0.13.3", features = ["ecdsa"] }
+libgoldilocks = { git = "https://github.com/core-coin/ed448-rs" }

@@ -47,7 +47,7 @@ criterion = "0.5"
 indicatif = "0.17"
 
 [features]
-default = ["std", "c-kzg", "secp256k1", "portable"]
+default = ["std", "c-kzg", "portable"]
 std = [
     "serde?/std",
     "serde_json?/std",
@@ -99,7 +99,6 @@ optional_no_base_fee = ["revm-interpreter/optional_no_base_fee"]
 optional_beneficiary_reward = ["revm-interpreter/optional_beneficiary_reward"]
 
 # See comments in `revm-precompile`
-secp256k1 = ["revm-precompile/secp256k1"]
 c-kzg = ["revm-precompile/c-kzg"]
 
 [[example]]

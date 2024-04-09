@@ -1,7 +1,7 @@
+pub use c_kzg::{BYTES_PER_G1_POINT, BYTES_PER_G2_POINT};
 use core::fmt;
 use derive_more::{AsMut, AsRef, Deref, DerefMut};
-
-pub use c_kzg::{BYTES_PER_G1_POINT, BYTES_PER_G2_POINT};
+use std::boxed::Box;
 
 /// Number of G1 Points.
 pub const NUM_G1_POINTS: usize = 4096;

@@ -369,8 +369,6 @@ pub fn end<SPEC: Spec, EXT, DB: Database>(
 
 #[cfg(test)]
 mod tests {
-    use revm_interpreter::{CallOutcome, InterpreterResult};
-
     use super::*;
     use crate::{
         db::{EmptyDB, InMemoryDB},
@@ -380,6 +378,8 @@ mod tests {
         },
         L1BlockInfo,
     };
+    use revm_interpreter::{CallOutcome, InterpreterResult};
+    use std::boxed::Box;
 
     /// Creates frame result.
     fn call_last_frame_return<SPEC: Spec>(

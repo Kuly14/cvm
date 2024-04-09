@@ -3,6 +3,7 @@ use crate::{
     primitives::{Address, Env, Log, B256, KECCAK_EMPTY},
     Host, SStoreResult, SelfDestructResult,
 };
+use std::vec::Vec;
 
 /// A dummy [Host] implementation.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
