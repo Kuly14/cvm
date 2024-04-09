@@ -22,7 +22,7 @@ pub mod state;
 pub mod utilities;
 pub use alloy_primitives::{
     self, address, b256, bytes, fixed_bytes, hex, hex_literal, ruint, uint, Address, Bytes,
-    FixedBytes, Log, LogData, B256, I256, U256 
+    FixedBytes, Log, LogData, B256, I256, U256, B1368
 };
 pub use bitvec;
 pub use bytecode::*;

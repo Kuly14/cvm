@@ -1,6 +1,6 @@
 use crate::{utilities::right_pad, Error, Precompile, PrecompileResult, PrecompileWithAddress};
 use libgoldilocks::goldilocks::ed448_verify_with_error;
-use revm_primitives::{alloy_primitives::B1368, sha3, Bytes, B256};
+use revm_primitives::{B1368, sha3, Bytes, B256};
 
 pub const ECRECOVER: PrecompileWithAddress = PrecompileWithAddress(
     crate::u64_to_address(1),
