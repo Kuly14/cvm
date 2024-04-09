@@ -7,8 +7,9 @@ use revm_interpreter::primitives::{
     db::{Database, DatabaseCommit},
     hash_map, Account, AccountInfo, Address, Bytecode, HashMap, B256, BLOCK_HASH_HISTORY, U256,
 };
+use std::boxed::Box;
 use std::collections::{btree_map, BTreeMap};
-
+use std::vec::Vec;
 /// Database boxed with a lifetime and Send.
 pub type DBBox<'a, E> = Box<dyn Database<Error = E> + Send + 'a>;
 

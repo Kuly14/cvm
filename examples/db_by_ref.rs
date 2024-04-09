@@ -6,8 +6,8 @@ use revm::{
     primitives::ResultAndState,
     DatabaseCommit, DatabaseRef, Evm,
 };
+use std::boxed::Box;
 use std::error::Error;
-
 trait DatabaseRefDebugError: DatabaseRef<Error = Self::DBError> {
     type DBError: std::fmt::Debug + Error + Send + Sync + 'static;
 }

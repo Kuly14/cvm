@@ -5,6 +5,7 @@ use revm::{
     db::PlainAccount,
     primitives::{sha3, Address, Log, B256, U256},
 };
+use std::vec::Vec;
 use triehash::sec_trie_root;
 
 pub fn log_rlp_hash(logs: &[Log]) -> B256 {

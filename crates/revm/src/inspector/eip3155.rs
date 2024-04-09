@@ -8,8 +8,9 @@ use crate::{
     EvmContext, Inspector,
 };
 use serde::Serialize;
+use std::boxed::Box;
 use std::io::Write;
-
+use std::vec::Vec;
 /// [EIP-3155](https://eips.ethereum.org/EIPS/eip-3155) tracer [Inspector].
 pub struct TracerEip3155 {
     output: Box<dyn Write>,

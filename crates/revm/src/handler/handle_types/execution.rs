@@ -4,9 +4,9 @@ use crate::{
     primitives::{db::Database, EVMError, Spec},
     CallFrame, Context, CreateFrame, Frame, FrameOrResult, FrameResult,
 };
-use std::sync::Arc;
-
 use revm_interpreter::{CallOutcome, CreateOutcome, InterpreterResult};
+use std::boxed::Box;
+use std::sync::Arc;
 
 /// Handles first frame return handle.
 pub type LastFrameReturnHandle<'a, EXT, DB> = Arc<

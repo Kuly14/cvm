@@ -1,6 +1,7 @@
 use revm::primitives::{Address, Bytes, HashMap, B256, U256};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::vec::Vec;
 
 mod deserializer;
 use deserializer::*;
