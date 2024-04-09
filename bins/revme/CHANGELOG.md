@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1](https://github.com/Kuly14/cvm/compare/revme-v0.4.0...revme-v0.4.1) - 2024-04-09
+
+### Added
+- Make ecrecover compatible with core blockchain ([#2](https://github.com/Kuly14/cvm/pull/2))
+
+### Other
+- Make revm compatible with core blockchain
+
 ## [0.4.0](https://github.com/bluealloy/revm/compare/revme-v0.3.1...revme-v0.4.0) - 2024-04-02
 
 ### Added
