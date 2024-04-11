@@ -6,7 +6,7 @@ use super::{
 use core::{mem, ops::RangeInclusive};
 use revm_interpreter::primitives::{
     hash_map::{self, Entry},
-    AccountInfo, Address, Bytecode, HashMap, HashSet, StorageSlot, B256, KECCAK_EMPTY, U256,
+    AccountInfo, Address, Bytecode, HashMap, HashSet, StorageSlot, B256, SHA_EMPTY, U256,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::vec::Vec;
@@ -494,7 +494,7 @@ impl BundleState {
             .contracts
             .into_iter()
             // remove empty bytecodes
-            .filter(|(b, _)| *b != KECCAK_EMPTY)
+            .filter(|(b, _)| *b != SHA_EMPTY)
             .collect::<Vec<_>>();
         StateChangeset {
             accounts,
@@ -695,7 +695,7 @@ impl BundleState {
 mod tests {
     use super::*;
     use crate::{db::StorageWithOriginalValues, TransitionAccount};
-    use revm_interpreter::primitives::KECCAK_EMPTY;
+    use revm_interpreter::primitives::SHA_EMPTY;
 
     #[test]
     fn transition_states() {
@@ -704,7 +704,7 @@ mod tests {
         let acc1 = AccountInfo {
             balance: U256::from(10),
             nonce: 1,
-            code_hash: KECCAK_EMPTY,
+            code_hash: SHA_EMPTY,
             code: None,
         };
 
@@ -755,7 +755,7 @@ mod tests {
                     Some(AccountInfo {
                         nonce: 1,
                         balance: U256::from(10),
-                        code_hash: KECCAK_EMPTY,
+                        code_hash: SHA_EMPTY,
                         code: None,
                     }),
                     HashMap::from([
@@ -769,7 +769,7 @@ mod tests {
                     Some(AccountInfo {
                         nonce: 1,
                         balance: U256::from(10),
-                        code_hash: KECCAK_EMPTY,
+                        code_hash: SHA_EMPTY,
                         code: None,
                     }),
                     HashMap::from([]),
@@ -797,7 +797,7 @@ mod tests {
                 Some(AccountInfo {
                     nonce: 3,
                     balance: U256::from(20),
-                    code_hash: KECCAK_EMPTY,
+                    code_hash: SHA_EMPTY,
                     code: None,
                 }),
                 HashMap::from([(slot1(), (U256::from(0), U256::from(15)))]),
@@ -807,7 +807,7 @@ mod tests {
                 Some(Some(AccountInfo {
                     nonce: 1,
                     balance: U256::from(10),
-                    code_hash: KECCAK_EMPTY,
+                    code_hash: SHA_EMPTY,
                     code: None,
                 })),
                 vec![(slot1(), U256::from(10))],
@@ -824,7 +824,7 @@ mod tests {
                 AccountInfo {
                     nonce: 1,
                     balance: U256::from(10),
-                    code_hash: KECCAK_EMPTY,
+                    code_hash: SHA_EMPTY,
                     code: None,
                 },
             )
@@ -838,7 +838,7 @@ mod tests {
                 AccountInfo {
                     nonce: 1,
                     balance: U256::from(10),
-                    code_hash: KECCAK_EMPTY,
+                    code_hash: SHA_EMPTY,
                     code: None,
                 },
             )
@@ -857,7 +857,7 @@ mod tests {
                 AccountInfo {
                     nonce: 3,
                     balance: U256::from(20),
-                    code_hash: KECCAK_EMPTY,
+                    code_hash: SHA_EMPTY,
                     code: None,
                 },
             )
@@ -872,7 +872,7 @@ mod tests {
                 Some(Some(AccountInfo {
                     nonce: 1,
                     balance: U256::from(10),
-                    code_hash: KECCAK_EMPTY,
+                    code_hash: SHA_EMPTY,
                     code: None,
                 })),
             )

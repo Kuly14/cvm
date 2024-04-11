@@ -47,7 +47,7 @@ checksum = "0942ffc6dcaadf03badf6e6a2d0228460359d5e34b57ccdc720b7382dfbd5ec5"
 [[package]]
 name = "alloy-primitives"
 version = "0.7.0"
-source = "git+https://github.com/core-coin/base-rs#1527526634dc46decf30826b2485275f10f8e4d8"
+source = "git+https://github.com/core-coin/base-rs/#2a715a402a7afe0b8ec340b35c99ce17ad08bf40"
 dependencies = [
  "alloy-rlp",
  "arbitrary",
@@ -93,7 +93,7 @@ dependencies = [
 [[package]]
 name = "alloy-sol-macro"
 version = "0.7.0"
-source = "git+https://github.com/core-coin/base-rs#1527526634dc46decf30826b2485275f10f8e4d8"
+source = "git+https://github.com/core-coin/base-rs/#2a715a402a7afe0b8ec340b35c99ce17ad08bf40"
 dependencies = [
  "alloy-sol-macro-input",
  "const-hex",
@@ -110,7 +110,7 @@ dependencies = [
 [[package]]
 name = "alloy-sol-macro-input"
 version = "0.7.0"
-source = "git+https://github.com/core-coin/base-rs#1527526634dc46decf30826b2485275f10f8e4d8"
+source = "git+https://github.com/core-coin/base-rs/#2a715a402a7afe0b8ec340b35c99ce17ad08bf40"
 dependencies = [
  "const-hex",
  "dunce",
@@ -124,7 +124,7 @@ dependencies = [
 [[package]]
 name = "alloy-sol-types"
 version = "0.7.0"
-source = "git+https://github.com/core-coin/base-rs#1527526634dc46decf30826b2485275f10f8e4d8"
+source = "git+https://github.com/core-coin/base-rs/#2a715a402a7afe0b8ec340b35c99ce17ad08bf40"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-macro",
@@ -2970,7 +2970,7 @@ dependencies = [
 [[package]]
 name = "syn-solidity"
 version = "0.7.0"
-source = "git+https://github.com/core-coin/base-rs#1527526634dc46decf30826b2485275f10f8e4d8"
+source = "git+https://github.com/core-coin/base-rs/#2a715a402a7afe0b8ec340b35c99ce17ad08bf40"
 dependencies = [
  "paste",
  "proc-macro2",

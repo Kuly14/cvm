@@ -2,7 +2,7 @@
 
 This implements Ethereum's precompiled contract `ECRECOVER`, an elliptic curve digital signature algorithm (ECDSA) recovery function that recovers the Ethereum address (public key hash) associated with a given signature. The implementation features two versions, each contingent on whether the secp256k1 cryptographic library is enabled, which depends on the build configuration.
 
-Both versions define a `secp256k1` module that includes an `ecrecover` function. This function takes a digital signature and a message as input, both represented as byte arrays, and returns the recovered Ethereum address. It performs this operation by using the signature to recover the original public key used for signing, then hashing this public key with `Keccak256`, Ethereum's chosen hash function. The hash is then truncated to match Ethereum's 20-byte address size.
+Both versions define a `secp256k1` module that includes an `ecrecover` function. This function takes a digital signature and a message as input, both represented as byte arrays, and returns the recovered Ethereum address. It performs this operation by using the signature to recover the original public key used for signing, then hashing this public key with `Sha3`, Ethereum's chosen hash function. The hash is then truncated to match Ethereum's 20-byte address size.
 
 When `secp256k1` is not enabled, the ecrecover function uses the `k256` library to parse the signature, recover the public key, and perform the hashing. When `secp256k1` is enabled, the function uses the `secp256k1` library for these operations. Although both versions perform the same fundamental operation, they use different cryptographic libraries, which can offer different optimizations and security properties.
 

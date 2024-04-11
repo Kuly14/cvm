@@ -1,4 +1,4 @@
-use crate::{Address, Bytecode, HashMap, B256, KECCAK_EMPTY, U256};
+use crate::{Address, Bytecode, HashMap, B256, SHA_EMPTY, U256};
 use bitflags::bitflags;
 use core::hash::{Hash, Hasher};
 
@@ -201,7 +201,7 @@ impl Default for AccountInfo {
     fn default() -> Self {
         Self {
             balance: U256::ZERO,
-            code_hash: KECCAK_EMPTY,
+            code_hash: SHA_EMPTY,
             code: Some(Bytecode::new()),
             nonce: 0,
         }
@@ -243,7 +243,7 @@ impl AccountInfo {
     /// Returns if an account is empty.
     ///
     /// An account is empty if the following conditions are met.
-    /// - code hash is zero or set to the Keccak256 hash of the empty string `""`
+    /// - code hash is zero or set to the Sha3 hash of the empty string `""`
     /// - balance is zero
     /// - nonce is zero
     pub fn is_empty(&self) -> bool {
@@ -262,15 +262,15 @@ impl AccountInfo {
     }
 
     /// Return bytecode hash associated with this account.
-    /// If account does not have code, it return's `KECCAK_EMPTY` hash.
+    /// If account does not have code, it return's `SHA_EMPTY` hash.
     pub fn code_hash(&self) -> B256 {
         self.code_hash
     }
 
-    /// Returns true if the code hash is the Keccak256 hash of the empty string `""`.
+    /// Returns true if the code hash is the Sha3 hash of the empty string `""`.
     #[inline]
     pub fn is_empty_code_hash(&self) -> bool {
-        self.code_hash == KECCAK_EMPTY
+        self.code_hash == SHA_EMPTY
     }
 
     /// Take bytecode from account. Code will be set to None.
@@ -288,7 +288,7 @@ impl AccountInfo {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Account, KECCAK_EMPTY, U256};
+    use crate::{Account, SHA_EMPTY, U256};
 
     #[test]
     fn account_is_empty_balance() {
@@ -325,7 +325,7 @@ mod tests {
         account.info.code_hash = [0; 32].into();
         assert!(account.is_empty());
 
-        account.info.code_hash = KECCAK_EMPTY;
+        account.info.code_hash = SHA_EMPTY;
         assert!(account.is_empty());
     }
 

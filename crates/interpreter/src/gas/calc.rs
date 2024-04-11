@@ -78,7 +78,7 @@ pub fn sstore_refund(spec_id: SpecId, original: U256, current: U256, new: U256) 
 #[inline]
 pub const fn create2_cost(len: u64) -> Option<u64> {
     let sha_addup_base = len.div_ceil(32);
-    let sha_addup = tri!(KECCAK256WORD.checked_mul(sha_addup_base));
+    let sha_addup = tri!(SHA3WORD.checked_mul(sha_addup_base));
     CREATE.checked_add(sha_addup)
 }
 
@@ -166,10 +166,10 @@ pub const fn log_cost(n: u8, len: u64) -> Option<u64> {
     tri!(LOG.checked_add(tri!(LOGDATA.checked_mul(len)))).checked_add(LOGTOPIC * n as u64)
 }
 
-/// `KECCAK256` opcode cost calculation.
+/// `SHA3` opcode cost calculation.
 #[inline]
 pub const fn sha3_cost(len: u64) -> Option<u64> {
-    KECCAK256.checked_add(tri!(cost_per_word(len, KECCAK256WORD)))
+    SHA3.checked_add(tri!(cost_per_word(len, SHA3WORD)))
 }
 
 /// Cost for memory length. `ceil(len / 32) * multiple`.

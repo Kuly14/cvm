@@ -203,7 +203,7 @@ opcodes! {
     0x1D => SAR    => bitwise::sar::<H, SPEC>,
     // 0x1E
     // 0x1F
-    0x20 => KECCAK256 => system::sha3,
+    0x20 => SHA3 => system::sha3,
     // 0x21
     // 0x22
     // 0x23
@@ -618,7 +618,7 @@ const fn opcode_gas_info(opcode: u8, spec: SpecId) -> OpInfo {
         }),
         0x1E => OpInfo::none(),
         0x1F => OpInfo::none(),
-        KECCAK256 => OpInfo::dynamic_gas(),
+        SHA3 => OpInfo::dynamic_gas(),
         0x21 => OpInfo::none(),
         0x22 => OpInfo::none(),
         0x23 => OpInfo::none(),

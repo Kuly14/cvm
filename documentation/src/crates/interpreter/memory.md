@@ -12,7 +12,7 @@ These opcodes read from the memory:
 * RETURN
 * REVERT
 * LOG
-* KECCAK256
+* SHA3
 * CREATE
 * CREATE2
 * CALL

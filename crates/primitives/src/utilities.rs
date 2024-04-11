@@ -3,9 +3,9 @@ use crate::{
 };
 pub use alloy_primitives::sha3;
 
-/// The Keccak-256 hash of the empty string `""`.
-pub const KECCAK_EMPTY: B256 =
-    b256!("c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+/// The Sha3 hash of the empty string `""`.
+pub const SHA_EMPTY: B256 =
+    b256!("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a");
 
 /// Calculates the `excess_blob_gas` from the parent header's `blob_gas_used` and `excess_blob_gas`.
 ///

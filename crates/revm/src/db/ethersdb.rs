@@ -4,7 +4,7 @@ use ethers_core::types::{Block, BlockId, TxHash, H160 as eH160, H256, U64 as eU6
 use ethers_providers::Middleware;
 use tokio::runtime::{Builder, Handle, RuntimeFlavor};
 
-use crate::primitives::{AccountInfo, Address, Bytecode, B256, KECCAK_EMPTY, U256};
+use crate::primitives::{AccountInfo, Address, Bytecode, B256, SHA_EMPTY, U256};
 use crate::{Database, DatabaseRef};
 
 #[derive(Debug, Clone)]
@@ -106,7 +106,7 @@ impl<M: Middleware> DatabaseRef for EthersDB<M> {
     fn block_hash_ref(&self, number: U256) -> Result<B256, Self::Error> {
         // saturate usize
         if number > U256::from(u64::MAX) {
-            return Ok(KECCAK_EMPTY);
+            return Ok(SHA_EMPTY);
         }
         // We know number <= u64::MAX so unwrap is safe
         let number = eU64::from(u64::try_from(number).unwrap());

@@ -1,7 +1,6 @@
 use super::{DatabaseCommit, DatabaseRef, EmptyDB};
 use crate::primitives::{
-    hash_map::Entry, Account, AccountInfo, Address, Bytecode, HashMap, Log, B256, KECCAK_EMPTY,
-    U256,
+    hash_map::Entry, Account, AccountInfo, Address, Bytecode, HashMap, Log, B256, SHA_EMPTY, U256,
 };
 use crate::Database;
 use core::convert::Infallible;
@@ -44,7 +43,7 @@ impl<ExtDB: Default> Default for CacheDB<ExtDB> {
 impl<ExtDB> CacheDB<ExtDB> {
     pub fn new(db: ExtDB) -> Self {
         let mut contracts = HashMap::new();
-        contracts.insert(KECCAK_EMPTY, Bytecode::new());
+        contracts.insert(SHA_EMPTY, Bytecode::new());
         contracts.insert(B256::ZERO, Bytecode::new());
         Self {
             accounts: HashMap::new(),
@@ -63,7 +62,7 @@ impl<ExtDB> CacheDB<ExtDB> {
     pub fn insert_contract(&mut self, account: &mut AccountInfo) {
         if let Some(code) = &account.code {
             if !code.is_empty() {
-                if account.code_hash == KECCAK_EMPTY {
+                if account.code_hash == SHA_EMPTY {
                     account.code_hash = code.hash_slow();
                 }
                 self.contracts
@@ -72,7 +71,7 @@ impl<ExtDB> CacheDB<ExtDB> {
             }
         }
         if account.code_hash == B256::ZERO {
-            account.code_hash = KECCAK_EMPTY;
+            account.code_hash = SHA_EMPTY;
         }
     }
 
@@ -386,7 +385,7 @@ impl Database for BenchmarkDB {
                 nonce: 0,
                 balance: U256::from(10000000),
                 code: None,
-                code_hash: KECCAK_EMPTY,
+                code_hash: SHA_EMPTY,
             }));
         }
         Ok(None)

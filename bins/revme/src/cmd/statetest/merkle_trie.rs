@@ -38,7 +38,7 @@ impl TrieAccount {
         Self {
             nonce: acc.info.nonce,
             balance: acc.info.balance,
-            root_hash: sec_trie_root::<KeccakHasher, _, _, _>(
+            root_hash: sec_trie_root::<ShaHasher, _, _, _>(
                 acc.storage
                     .iter()
                     .filter(|(_k, &v)| v != U256::ZERO)
@@ -56,13 +56,13 @@ where
     A: AsRef<[u8]>,
     B: AsRef<[u8]>,
 {
-    sec_trie_root::<KeccakHasher, _, _, _>(input)
+    sec_trie_root::<ShaHasher, _, _, _>(input)
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct KeccakHasher;
+pub struct ShaHasher;
 
-impl Hasher for KeccakHasher {
+impl Hasher for ShaHasher {
     type Out = B256;
     type StdHasher = PlainHasher;
     const LENGTH: usize = 32;
