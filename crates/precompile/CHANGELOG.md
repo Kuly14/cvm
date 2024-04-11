@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.0.0](https://github.com/Kuly14/cvm/compare/revm-precompile-v6.0.0...revm-precompile-v7.0.0) - 2024-04-11
+
+### Added
+- Make ecrecover compatible with core blockchain ([#2](https://github.com/Kuly14/cvm/pull/2))
+
+### Fixed
+- Rename gas to energy
+
+### Other
+- Make revm compatible with core blockchain
+- *(deps)* bump secp256k1 from 0.28.2 to 0.29.0 ([#1260](https://github.com/Kuly14/cvm/pull/1260))
+
 ## [6.0.0](https://github.com/bluealloy/revm/compare/revm-precompile-v5.1.0...revm-precompile-v6.0.0) - 2024-04-02
 
 ### Fixed
