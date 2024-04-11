@@ -509,11 +509,11 @@ mod test {
     #[test]
     fn simple_add_instruction() {
         const CUSTOM_INSTRUCTION_COST: u64 = 133;
-        const INITIAL_TX_GAS: u64 = 21000;
-        const EXPECTED_RESULT_GAS: u64 = INITIAL_TX_GAS + CUSTOM_INSTRUCTION_COST;
+        const INITIAL_TX_ENERGY: u64 = 21000;
+        const EXPECTED_RESULT_ENERGY: u64 = INITIAL_TX_ENERGY + CUSTOM_INSTRUCTION_COST;
         fn custom_instruction(interp: &mut Interpreter, _host: &mut impl Host) {
-            // just spend some gas
-            interp.gas.record_cost(CUSTOM_INSTRUCTION_COST);
+            // just spend some energy
+            interp.energy.record_cost(CUSTOM_INSTRUCTION_COST);
         }
 
         let code = Bytecode::new_raw([0xEF, 0x00].into());
@@ -534,7 +534,10 @@ mod test {
             .build();
 
         let result_and_state = evm.transact().unwrap();
-        assert_eq!(result_and_state.result.gas_used(), EXPECTED_RESULT_GAS);
+        assert_eq!(
+            result_and_state.result.energy_used(),
+            EXPECTED_RESULT_ENERGY
+        );
     }
 
     #[test]
@@ -561,16 +564,18 @@ mod test {
         // with with Env change in multiple places
         Evm::builder()
             .with_empty_db()
-            .modify_tx_env(|tx| tx.gas_limit = 10)
+            .modify_tx_env(|tx| tx.energy_limit = 10)
             .build();
-        Evm::builder().modify_tx_env(|tx| tx.gas_limit = 10).build();
         Evm::builder()
-            .with_empty_db()
-            .modify_tx_env(|tx| tx.gas_limit = 10)
+            .modify_tx_env(|tx| tx.energy_limit = 10)
             .build();
         Evm::builder()
             .with_empty_db()
-            .modify_tx_env(|tx| tx.gas_limit = 10)
+            .modify_tx_env(|tx| tx.energy_limit = 10)
+            .build();
+        Evm::builder()
+            .with_empty_db()
+            .modify_tx_env(|tx| tx.energy_limit = 10)
             .build();
 
         // with inspector handle
@@ -616,7 +621,7 @@ mod test {
             fn call(
                 &self,
                 _input: &Bytes,
-                _gas_price: u64,
+                _energy_price: u64,
                 _context: &mut InnerEvmContext<EmptyDB>,
             ) -> PrecompileResult {
                 Ok((10, Bytes::new()))

@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - use uint macro & fix various small things ([#1253](https://github.com/bluealloy/revm/pull/1253))
 - move div by zero check from smod to i256_mod ([#1248](https://github.com/bluealloy/revm/pull/1248))
 - *(interpreter)* unbox contract field ([#1228](https://github.com/bluealloy/revm/pull/1228))
-- *(interpreter)* keep track of remaining gas rather than spent ([#1221](https://github.com/bluealloy/revm/pull/1221))
+- *(interpreter)* keep track of remaining energy rather than spent ([#1221](https://github.com/bluealloy/revm/pull/1221))
 - *(interpreter)* don't run signextend with 31 too ([#1222](https://github.com/bluealloy/revm/pull/1222))
 
 ## [3.4.0](https://github.com/bluealloy/revm/compare/revm-interpreter-v3.3.0...revm-interpreter-v3.4.0) - 2024-03-19
@@ -176,7 +176,7 @@ Full git log:
 * f6c9c7f - chore: deprecate `RefDBWrapper` (#696) (3 weeks ago) <DaniPopes>
 * f2929ad - chore(deps): bump proptest-derive from 0.3.0 to 0.4.0 (#652) (4 weeks ago) <dependabot[bot]>
 * 37b0192 - perf(interpreter): improve i256 instructions (#630) (4 weeks ago) <DaniPopes>
-* 214e65d - chore(interpreter): improve gas calculations (#632) (5 weeks ago) <DaniPopes>
+* 214e65d - chore(interpreter): improve energy calculations (#632) (5 weeks ago) <DaniPopes>
 * 6b55b9c - feat(`interpreter`): add hash to bytecode (#628) (5 weeks ago) <evalir>
 * 84a5e97 - chore(interpreter): use `let else` (#629) (5 weeks ago) <DaniPopes>
 * e9d96cd - chore(interpreter): improve dummy host (#631) (5 weeks ago) <DaniPopes>
@@ -185,7 +185,7 @@ Full git log:
 * eb6a9f0 - Revert "feat: alloy migration (#535)" (#616) (6 weeks ago) <rakita>
 * c1bad0d - chore: spell check (#615) (6 weeks ago) <Roman Krasiuk>
 * f95b7a4 - feat: alloy migration (#535) (6 weeks ago) <DaniPopes>
-* bc4d203 - feat: remove unnecessary var and if branch in gas calc (#592) (7 weeks ago) <bemevolent>
+* bc4d203 - feat: remove unnecessary var and if branch in energy calc (#592) (7 weeks ago) <bemevolent>
 * ef57a46 - feat: State with account status (#499) (7 weeks ago) <rakita>
 * 157ef36 - feat: introduce initcode size limit check taking config into account (#587) (7 weeks ago) <evalir>
 * 12558c5 - fix: fix mcopy memory expansion. Add eth tests to ci (#586) (7 weeks ago) <rakita>
@@ -196,7 +196,7 @@ Full git log:
 * 36de35b - feat: Rename all SHA3 opcodes to KECCAK256 (#514) (3 months ago) <Tung Bui (Leo)>
 * 10f81ba - optimize stack usage for recursive `call` and `create` programs (#522) (3 months ago) <Valentin Mihov>
 * c153428 - feat(cancun): EIP-5656: MCOPY - Memory copying instruction (#528) (3 months ago) <Waylon Jepsen>
-* 51072e6 - consume all gas on invalid opcode (#500) (3 months ago) <teddav>
+* 51072e6 - consume all energy on invalid opcode (#500) (3 months ago) <teddav>
 * ccd0298 - feat: add Memory::into_data (#516) (3 months ago) <Matthias Seitz>
 * 69f417f - feat: simplify BYTE opcode (#512) (4 months ago) <teddav>
 * c54f079 - fix: replace SHA3 with KECCAK256 opcode name (#511) (4 months ago) <Matthias Seitz>
@@ -213,12 +213,12 @@ date: 03.05.2023
 date: 14.04.2023
 
 Added back utility function:
-* 7d9b38a - [Interpreter]: Add back `spec_gas_opcode` (#446) (9 days ago) <Enrique Ortiz>
+* 7d9b38a - [Interpreter]: Add back `spec_energy_opcode` (#446) (9 days ago) <Enrique Ortiz>
 
 # v1.1.0
 date: 04.04.2023
 
-Biggest changes are Shanghai support 08ce847 and removal of gas blocks f91d5f9.
+Biggest changes are Shanghai support 08ce847 and removal of energy blocks f91d5f9.
 
 Changelog:
 * c2ee8ff - add feature for ignoring base fee check (#436) (6 days ago) <Dan Cline>
@@ -230,12 +230,12 @@ Changelog:
 * 1720729 - chore: add display impl for Opcode (#406) (4 weeks ago) <Matthias Seitz>
 * 33bf8a8 - feat: use singular bytes for the jumpmap (#402) (4 weeks ago) <Bjerg>
 * 394e8e9 - feat: extend SuccessOrHalt (#405) (4 weeks ago) <Matthias Seitz>
-* f91d5f9 - refactor: remove gas blocks (#391) (5 weeks ago) <Bjerg>
+* f91d5f9 - refactor: remove energy blocks (#391) (5 weeks ago) <Bjerg>
 * a8ae3f4 - fix: using pop_top instead of pop in eval_exp (#379) (7 weeks ago) <flyq>
 * 08ce847 - feat(Shanghai): All EIPs: push0, warm coinbase, limit/measure initcode (#376) (7 weeks ago) <rakita>
 * 6710511 - add no_std to primitives (#366) (7 weeks ago) <rakita>
 * 1fca102 - chore(deps): bump proptest from 1.0.0 to 1.1.0 (#358) (8 weeks ago) <dependabot[bot]>
-* 9b663bb - feat: Different OutOfGas Error types (#354) (9 weeks ago) <Chirag Baghasingh>
+* 9b663bb - feat: Different OutOfEnergy Error types (#354) (9 weeks ago) <Chirag Baghasingh>
 
 # v1.0.0
 date: 29.01.2023

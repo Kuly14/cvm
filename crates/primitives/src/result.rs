@@ -24,18 +24,18 @@ pub enum ExecutionResult {
     /// Returned successfully
     Success {
         reason: SuccessReason,
-        gas_used: u64,
-        gas_refunded: u64,
+        energy_used: u64,
+        energy_refunded: u64,
         logs: Vec<Log>,
         output: Output,
     },
-    /// Reverted by `REVERT` opcode that doesn't spend all gas.
-    Revert { gas_used: u64, output: Bytes },
-    /// Reverted for various reasons and spend all gas.
+    /// Reverted by `REVERT` opcode that doesn't spend all energy.
+    Revert { energy_used: u64, output: Bytes },
+    /// Reverted for various reasons and spend all energy.
     Halt {
         reason: HaltReason,
-        /// Halting will spend all the gas, and will be equal to gas_limit.
-        gas_used: u64,
+        /// Halting will spend all the energy, and will be equal to energy_limit.
+        energy_used: u64,
     },
 }
 
@@ -90,12 +90,12 @@ impl ExecutionResult {
         }
     }
 
-    /// Returns the gas used.
-    pub fn gas_used(&self) -> u64 {
+    /// Returns the energy used.
+    pub fn energy_used(&self) -> u64 {
         match *self {
-            Self::Success { gas_used, .. }
-            | Self::Revert { gas_used, .. }
-            | Self::Halt { gas_used, .. } => gas_used,
+            Self::Success { energy_used, .. }
+            | Self::Revert { energy_used, .. }
+            | Self::Halt { energy_used, .. } => energy_used,
         }
     }
 }
@@ -190,24 +190,24 @@ impl<DBError> From<InvalidHeader> for EVMError<DBError> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum InvalidTransaction {
     /// When using the EIP-1559 fee model introduced in the London upgrade, transactions specify two primary fee fields:
-    /// - `gas_max_fee`: The maximum total fee a user is willing to pay, inclusive of both base fee and priority fee.
-    /// - `gas_priority_fee`: The extra amount a user is willing to give directly to the miner, often referred to as the "tip".
+    /// - `energy_max_fee`: The maximum total fee a user is willing to pay, inclusive of both base fee and priority fee.
+    /// - `energy_priority_fee`: The extra amount a user is willing to give directly to the miner, often referred to as the "tip".
     ///
-    /// Provided `gas_priority_fee` exceeds the total `gas_max_fee`.
+    /// Provided `energy_priority_fee` exceeds the total `energy_max_fee`.
     PriorityFeeGreaterThanMaxFee,
-    /// EIP-1559: `gas_price` is less than `basefee`.
-    GasPriceLessThanBasefee,
-    /// `gas_limit` in the tx is bigger than `block_gas_limit`.
-    CallerGasLimitMoreThanBlock,
-    /// Initial gas for a Call is bigger than `gas_limit`.
+    /// EIP-1559: `energy_price` is less than `basefee`.
+    EnergyPriceLessThanBasefee,
+    /// `energy_limit` in the tx is bigger than `block_energy_limit`.
+    CallerEnergyLimitMoreThanBlock,
+    /// Initial energy for a Call is bigger than `energy_limit`.
     ///
-    /// Initial gas for a Call contains:
-    /// - initial stipend gas
-    /// - gas for access list and input data
-    CallGasCostMoreThanGasLimit,
+    /// Initial energy for a Call contains:
+    /// - initial stipend energy
+    /// - energy for access list and input data
+    CallEnergyCostMoreThanEnergyLimit,
     /// EIP-3607 Reject transactions from senders with deployed code
     RejectCallerWithCode,
-    /// Transaction account does not have enough amount of ether to cover transferred value and gas_limit*gas_price.
+    /// Transaction account does not have enough amount of ether to cover transferred value and energy_limit*energy_price.
     LackOfFundForMaxFee {
         fee: Box<U256>,
         balance: Box<U256>,
@@ -230,12 +230,12 @@ pub enum InvalidTransaction {
     InvalidChainId,
     /// Access list is not supported for blocks before the Berlin hardfork.
     AccessListNotSupported,
-    /// `max_fee_per_blob_gas` is not supported for blocks before the Cancun hardfork.
-    MaxFeePerBlobGasNotSupported,
+    /// `max_fee_per_blob_energy` is not supported for blocks before the Cancun hardfork.
+    MaxFeePerBlobEnergyNotSupported,
     /// `blob_hashes`/`blob_versioned_hashes` is not supported for blocks before the Cancun hardfork.
     BlobVersionedHashesNotSupported,
-    /// Block `blob_gas_price` is greater than tx-specified `max_fee_per_blob_gas` after Cancun.
-    BlobGasPriceGreaterThanMax,
+    /// Block `blob_energy_price` is greater than tx-specified `max_fee_per_blob_energy` after Cancun.
+    BlobEnergyPriceGreaterThanMax,
     /// There should be at least one blob in Blob transaction.
     EmptyBlobs,
     /// Blob transaction can't be a create transaction.
@@ -256,7 +256,7 @@ pub enum InvalidTransaction {
     /// in the `revm` handler for the consumer to easily handle. This is due to a state transition
     /// rule on OP Stack chains where, if for any reason a deposit transaction fails, the transaction
     /// must still be included in the block, the sender nonce is bumped, the `mint` value persists, and
-    /// special gas accounting rules are applied. Normally on L1, [EVMError::Transaction] errors
+    /// special energy accounting rules are applied. Normally on L1, [EVMError::Transaction] errors
     /// are cause for non-inclusion, so a special [HaltReason] variant was introduced to handle this
     /// case for failed deposit transactions.
     #[cfg(feature = "optimism")]
@@ -272,7 +272,7 @@ pub enum InvalidTransaction {
     /// in the `revm` handler for the consumer to easily handle. This is due to a state transition
     /// rule on OP Stack chains where, if for any reason a deposit transaction fails, the transaction
     /// must still be included in the block, the sender nonce is bumped, the `mint` value persists, and
-    /// special gas accounting rules are applied. Normally on L1, [EVMError::Transaction] errors
+    /// special energy accounting rules are applied. Normally on L1, [EVMError::Transaction] errors
     /// are cause for non-inclusion, so a special [HaltReason] variant was introduced to handle this
     /// case for failed deposit transactions.
     #[cfg(feature = "optimism")]
@@ -288,14 +288,14 @@ impl fmt::Display for InvalidTransaction {
             Self::PriorityFeeGreaterThanMaxFee => {
                 write!(f, "priority fee is greater than max fee")
             }
-            Self::GasPriceLessThanBasefee => {
-                write!(f, "gas price is less than basefee")
+            Self::EnergyPriceLessThanBasefee => {
+                write!(f, "energy price is less than basefee")
             }
-            Self::CallerGasLimitMoreThanBlock => {
-                write!(f, "caller gas limit exceeds the block gas limit")
+            Self::CallerEnergyLimitMoreThanBlock => {
+                write!(f, "caller energy limit exceeds the block energy limit")
             }
-            Self::CallGasCostMoreThanGasLimit => {
-                write!(f, "call gas cost exceeds the gas limit")
+            Self::CallEnergyCostMoreThanEnergyLimit => {
+                write!(f, "call energy cost exceeds the energy limit")
             }
             Self::RejectCallerWithCode => {
                 write!(f, "reject transactions from senders with deployed code")
@@ -320,14 +320,17 @@ impl fmt::Display for InvalidTransaction {
             }
             Self::InvalidChainId => write!(f, "invalid chain ID"),
             Self::AccessListNotSupported => write!(f, "access list not supported"),
-            Self::MaxFeePerBlobGasNotSupported => {
-                write!(f, "max fee per blob gas not supported")
+            Self::MaxFeePerBlobEnergyNotSupported => {
+                write!(f, "max fee per blob energy not supported")
             }
             Self::BlobVersionedHashesNotSupported => {
                 write!(f, "blob versioned hashes not supported")
             }
-            Self::BlobGasPriceGreaterThanMax => {
-                write!(f, "blob gas price is greater than max fee per blob gas")
+            Self::BlobEnergyPriceGreaterThanMax => {
+                write!(
+                    f,
+                    "blob energy price is greater than max fee per blob energy"
+                )
             }
             Self::EmptyBlobs => write!(f, "empty blobs"),
             Self::BlobCreateTransaction => write!(f, "blob create transaction"),
@@ -357,8 +360,8 @@ impl fmt::Display for InvalidTransaction {
 pub enum InvalidHeader {
     /// `prevrandao` is not set for Merge and above.
     PrevrandaoNotSet,
-    /// `excess_blob_gas` is not set for Cancun and above.
-    ExcessBlobGasNotSet,
+    /// `excess_blob_energy` is not set for Cancun and above.
+    ExcessBlobEnergyNotSet,
 }
 
 #[cfg(feature = "std")]
@@ -368,7 +371,7 @@ impl fmt::Display for InvalidHeader {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::PrevrandaoNotSet => write!(f, "`prevrandao` not set"),
-            Self::ExcessBlobGasNotSet => write!(f, "`excess_blob_gas` not set"),
+            Self::ExcessBlobEnergyNotSet => write!(f, "`excess_blob_energy` not set"),
         }
     }
 }
@@ -383,11 +386,11 @@ pub enum SuccessReason {
 }
 
 /// Indicates that the EVM has experienced an exceptional halt. This causes execution to
-/// immediately end with all gas being consumed.
+/// immediately end with all energy being consumed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum HaltReason {
-    OutOfGas(OutOfGasError),
+    OutOfEnergy(OutOfEnergyError),
     OpcodeNotFound,
     InvalidFEOpcode,
     InvalidJump,
@@ -419,7 +422,7 @@ pub enum HaltReason {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum OutOfGasError {
+pub enum OutOfEnergyError {
     // Basic OOG error
     Basic,
     // Tried to expand past REVM limit

@@ -7,7 +7,7 @@ This module contains various inspectors that can be used to execute and monitor 
 There are several built-in inspectors in this module:
 
 - `NoOpInspector`: A basic inspector that does nothing, which can be used when you don't need to monitor transactions.
-- `GasInspector`: Monitors the gas usage of transactions.
+- `EnergyInspector`: Monitors the energy usage of transactions.
 - `CustomPrintTracer`:
   Traces and prints custom messages during EVM execution.
   Available only when the `std` feature is enabled.

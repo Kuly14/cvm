@@ -110,14 +110,14 @@ date 28.09.2023
  * Cancun EIP-4844 precompile. It is behind `c-kzg` that is enabled by default
     the reason is that c-kzg fails to build on wasm and some docker images.
  * no_std support
- * small fixes to return out of gas for modepx and pairing precompiles.
+ * small fixes to return out of energy for modepx and pairing precompiles.
 
 Full git log:
 * 4f916be - chore: bump c-kzg to create lib (#758) (5 hours ago) <rakita>
 * f79d0e1 - feat: Optimism execution changes (#682) (16 hours ago) <clabby>
 * b9938a8 - chore(deps): bump sha2 from 0.10.7 to 0.10.8 (#752) (30 hours ago) <dependabot[bot]>
 * 8206193 - feat: add "kzg" as a separate feature (#746) (2 hours ago) <DaniPopes>
-* 73f6ad7 - modexp gas check (#737) (24 hours ago) <Alessandro Mazza>
+* 73f6ad7 - modexp energy check (#737) (24 hours ago) <Alessandro Mazza>
 * cb39117 - fix(eip4844): Pass eth tests, additional conditions added. (#735) (6 days ago) <rakita>
 * fa13fea - (lorenzo/main) feat: implement EIP-4844 (#668) (11 days ago) <DaniPopes>
 * 175aaec - Removed the last dependencies breaking no-std build. (#669) (4 weeks ago) <Lucas Clemente Vella>

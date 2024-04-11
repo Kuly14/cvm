@@ -14,7 +14,7 @@ mod macros;
 
 mod call_outcome;
 mod create_outcome;
-pub mod gas;
+pub mod energy;
 mod host;
 mod inner_models;
 mod instruction_result;
@@ -24,7 +24,7 @@ pub mod interpreter;
 // Reexport primary types.
 pub use call_outcome::CallOutcome;
 pub use create_outcome::CreateOutcome;
-pub use gas::Gas;
+pub use energy::Energy;
 pub use host::{DummyHost, Host, SStoreResult};
 pub use inner_models::*;
 pub use instruction_result::*;

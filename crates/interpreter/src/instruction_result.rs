@@ -1,4 +1,4 @@
-use crate::primitives::{HaltReason, OutOfGasError, SuccessReason};
+use crate::primitives::{HaltReason, OutOfEnergyError, SuccessReason};
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
@@ -20,7 +20,7 @@ pub enum InstructionResult {
     CallOrCreate = 0x20,
 
     // error codes
-    OutOfGas = 0x50,
+    OutOfEnergy = 0x50,
     MemoryOOG,
     MemoryLimitOOG,
     PrecompileOOG,
@@ -62,12 +62,12 @@ impl From<SuccessReason> for InstructionResult {
 impl From<HaltReason> for InstructionResult {
     fn from(value: HaltReason) -> Self {
         match value {
-            HaltReason::OutOfGas(error) => match error {
-                OutOfGasError::Basic => Self::OutOfGas,
-                OutOfGasError::InvalidOperand => Self::InvalidOperandOOG,
-                OutOfGasError::Memory => Self::MemoryOOG,
-                OutOfGasError::MemoryLimit => Self::MemoryLimitOOG,
-                OutOfGasError::Precompile => Self::PrecompileOOG,
+            HaltReason::OutOfEnergy(error) => match error {
+                OutOfEnergyError::Basic => Self::OutOfEnergy,
+                OutOfEnergyError::InvalidOperand => Self::InvalidOperandOOG,
+                OutOfEnergyError::Memory => Self::MemoryOOG,
+                OutOfEnergyError::MemoryLimit => Self::MemoryLimitOOG,
+                OutOfEnergyError::Precompile => Self::PrecompileOOG,
             },
             HaltReason::OpcodeNotFound => Self::OpcodeNotFound,
             HaltReason::InvalidFEOpcode => Self::InvalidFEOpcode,
@@ -113,7 +113,7 @@ macro_rules! return_revert {
 #[macro_export]
 macro_rules! return_error {
     () => {
-        InstructionResult::OutOfGas
+        InstructionResult::OutOfEnergy
             | InstructionResult::MemoryOOG
             | InstructionResult::MemoryLimitOOG
             | InstructionResult::PrecompileOOG
@@ -219,16 +219,20 @@ impl From<InstructionResult> for SuccessOrHalt {
             InstructionResult::CallOrCreate => Self::InternalCallOrCreate, // used only in interpreter loop
             InstructionResult::CallTooDeep => Self::Halt(HaltReason::CallTooDeep), // not gonna happen for first call
             InstructionResult::OutOfFunds => Self::Halt(HaltReason::OutOfFunds), // Check for first call is done separately.
-            InstructionResult::OutOfGas => Self::Halt(HaltReason::OutOfGas(OutOfGasError::Basic)),
-            InstructionResult::MemoryLimitOOG => {
-                Self::Halt(HaltReason::OutOfGas(OutOfGasError::MemoryLimit))
+            InstructionResult::OutOfEnergy => {
+                Self::Halt(HaltReason::OutOfEnergy(OutOfEnergyError::Basic))
             }
-            InstructionResult::MemoryOOG => Self::Halt(HaltReason::OutOfGas(OutOfGasError::Memory)),
+            InstructionResult::MemoryLimitOOG => {
+                Self::Halt(HaltReason::OutOfEnergy(OutOfEnergyError::MemoryLimit))
+            }
+            InstructionResult::MemoryOOG => {
+                Self::Halt(HaltReason::OutOfEnergy(OutOfEnergyError::Memory))
+            }
             InstructionResult::PrecompileOOG => {
-                Self::Halt(HaltReason::OutOfGas(OutOfGasError::Precompile))
+                Self::Halt(HaltReason::OutOfEnergy(OutOfEnergyError::Precompile))
             }
             InstructionResult::InvalidOperandOOG => {
-                Self::Halt(HaltReason::OutOfGas(OutOfGasError::InvalidOperand))
+                Self::Halt(HaltReason::OutOfEnergy(OutOfEnergyError::InvalidOperand))
             }
             InstructionResult::OpcodeNotFound => Self::Halt(HaltReason::OpcodeNotFound),
             InstructionResult::CallNotAllowedInsideStatic => {
@@ -301,7 +305,7 @@ mod tests {
         }
 
         let error_results = vec![
-            InstructionResult::OutOfGas,
+            InstructionResult::OutOfEnergy,
             InstructionResult::MemoryOOG,
             InstructionResult::MemoryLimitOOG,
             InstructionResult::PrecompileOOG,

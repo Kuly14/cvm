@@ -1,5 +1,5 @@
 use crate::{
-    gas,
+    energy,
     primitives::{Spec, B256, SHA_EMPTY, U256},
     Host, InstructionResult, Interpreter,
 };
@@ -7,7 +7,7 @@ use crate::{
 pub fn sha3<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
     pop!(interpreter, from, len);
     let len = as_usize_or_fail!(interpreter, len);
-    gas_or_fail!(interpreter, gas::sha3_cost(len as u64));
+    energy_or_fail!(interpreter, energy::sha3_cost(len as u64));
     let hash = if len == 0 {
         SHA_EMPTY
     } else {
@@ -20,24 +20,24 @@ pub fn sha3<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
 }
 
 pub fn address<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::BASE);
+    energy!(interpreter, energy::BASE);
     push_b256!(interpreter, interpreter.contract.address.into_word());
 }
 
 pub fn caller<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::BASE);
+    energy!(interpreter, energy::BASE);
     push_b256!(interpreter, interpreter.contract.caller.into_word());
 }
 
 pub fn codesize<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::BASE);
+    energy!(interpreter, energy::BASE);
     push!(interpreter, U256::from(interpreter.contract.bytecode.len()));
 }
 
 pub fn codecopy<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
     pop!(interpreter, memory_offset, code_offset, len);
     let len = as_usize_or_fail!(interpreter, len);
-    gas_or_fail!(interpreter, gas::verylowcopy_cost(len as u64));
+    energy_or_fail!(interpreter, energy::verylowcopy_cost(len as u64));
     if len == 0 {
         return;
     }
@@ -55,7 +55,7 @@ pub fn codecopy<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) 
 }
 
 pub fn calldataload<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::VERYLOW);
+    energy!(interpreter, energy::VERYLOW);
     pop!(interpreter, index);
     let index = as_usize_saturated!(index);
     let load = if index < interpreter.contract.input.len() {
@@ -71,19 +71,19 @@ pub fn calldataload<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut
 }
 
 pub fn calldatasize<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::BASE);
+    energy!(interpreter, energy::BASE);
     push!(interpreter, U256::from(interpreter.contract.input.len()));
 }
 
 pub fn callvalue<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::BASE);
+    energy!(interpreter, energy::BASE);
     push!(interpreter, interpreter.contract.value);
 }
 
 pub fn calldatacopy<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
     pop!(interpreter, memory_offset, data_offset, len);
     let len = as_usize_or_fail!(interpreter, len);
-    gas_or_fail!(interpreter, gas::verylowcopy_cost(len as u64));
+    energy_or_fail!(interpreter, energy::verylowcopy_cost(len as u64));
     if len == 0 {
         return;
     }
@@ -103,7 +103,7 @@ pub fn calldatacopy<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut
 /// EIP-211: New opcodes: RETURNDATASIZE and RETURNDATACOPY
 pub fn returndatasize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, _host: &mut H) {
     check!(interpreter, BYZANTIUM);
-    gas!(interpreter, gas::BASE);
+    energy!(interpreter, energy::BASE);
     push!(
         interpreter,
         U256::from(interpreter.return_data_buffer.len())
@@ -115,7 +115,7 @@ pub fn returndatacopy<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interprete
     check!(interpreter, BYZANTIUM);
     pop!(interpreter, memory_offset, offset, len);
     let len = as_usize_or_fail!(interpreter, len);
-    gas_or_fail!(interpreter, gas::verylowcopy_cost(len as u64));
+    energy_or_fail!(interpreter, energy::verylowcopy_cost(len as u64));
     let data_offset = as_usize_saturated!(offset);
     let (data_end, overflow) = data_offset.overflowing_add(len);
     if overflow || data_end > interpreter.return_data_buffer.len() {
@@ -132,7 +132,7 @@ pub fn returndatacopy<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interprete
     }
 }
 
-pub fn gas<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::BASE);
-    push!(interpreter, U256::from(interpreter.gas.remaining()));
+pub fn energy<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
+    energy!(interpreter, energy::BASE);
+    push!(interpreter, U256::from(interpreter.energy.remaining()));
 }

@@ -6,11 +6,11 @@ The `inner_models.rs` module within this Rust EVM implementation encompasses a c
 
 -  `CallInputs` Struct
 
-    The `CallInputs` struct is used to encapsulate the inputs to a smart contract call in the EVM. This struct includes the target contract address, the value to be transferred (if any), the input data, the gas limit for the call, the call context, and a boolean indicating if the call is a static call (a read-only operation).
+    The `CallInputs` struct is used to encapsulate the inputs to a smart contract call in the EVM. This struct includes the target contract address, the value to be transferred (if any), the input data, the energy limit for the call, the call context, and a boolean indicating if the call is a static call (a read-only operation).
 
 - `CreateInputs` Struct
 
-    The `CreateInputs` struct encapsulates the inputs for creating a new smart contract. This includes the address of the creator, the creation scheme, the value to be transferred, the initialization code for the new contract, and the gas limit for the creation operation.
+    The `CreateInputs` struct encapsulates the inputs for creating a new smart contract. This includes the address of the creator, the creation scheme, the value to be transferred, the initialization code for the new contract, and the energy limit for the creation operation.
 
 - `CallScheme` Enum
 

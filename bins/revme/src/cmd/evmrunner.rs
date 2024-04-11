@@ -77,7 +77,7 @@ impl Cmd {
                 bytecode.into(),
             )))
             .modify_tx_env(|tx| {
-                // execution globals block hash/gas_limit/coinbase/timestamp..
+                // execution globals block hash/energy_limit/coinbase/timestamp..
                 tx.caller = "0x0000000000000000000000000000000000000001"
                     .parse()
                     .unwrap();

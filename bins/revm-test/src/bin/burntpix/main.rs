@@ -48,9 +48,9 @@
 //     let tx_result = evm.transact().unwrap().result;
 //     let return_data = match tx_result {
 //         ExecutionResult::Success {
-//             output, gas_used, ..
+//             output, energy_used, ..
 //         } => {
-//             println!("Gas used: {:?}", gas_used);
+//             println!("Energy used: {:?}", energy_used);
 //             println!("Time elapsed: {:?}", started.elapsed());
 //             match output {
 //                 Output::Call(value) => value,

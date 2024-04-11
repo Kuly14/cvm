@@ -12,8 +12,8 @@ pub struct CallInputs {
     pub transfer: Transfer,
     /// The call data of the call.
     pub input: Bytes,
-    /// The gas limit of the call.
-    pub gas_limit: u64,
+    /// The energy limit of the call.
+    pub energy_limit: u64,
     /// The context of the call.
     pub context: CallContext,
     /// Whether this is a static call.
@@ -34,15 +34,15 @@ pub struct CreateInputs {
     pub value: U256,
     /// The init code of the contract.
     pub init_code: Bytes,
-    /// The gas limit of the call.
-    pub gas_limit: u64,
+    /// The energy limit of the call.
+    pub energy_limit: u64,
     /// Network id of the network
     pub network_id: u64,
 }
 
 impl CallInputs {
     /// Creates new call inputs.
-    pub fn new(tx_env: &TxEnv, gas_limit: u64) -> Option<Self> {
+    pub fn new(tx_env: &TxEnv, energy_limit: u64) -> Option<Self> {
         let TransactTo::Call(address) = tx_env.transact_to else {
             return None;
         };
@@ -55,7 +55,7 @@ impl CallInputs {
                 value: tx_env.value,
             },
             input: tx_env.data.clone(),
-            gas_limit,
+            energy_limit,
             context: CallContext {
                 caller: tx_env.caller,
                 address,
@@ -69,14 +69,14 @@ impl CallInputs {
     }
 
     /// Returns boxed call inputs.
-    pub fn new_boxed(tx_env: &TxEnv, gas_limit: u64) -> Option<Box<Self>> {
-        Self::new(tx_env, gas_limit).map(Box::new)
+    pub fn new_boxed(tx_env: &TxEnv, energy_limit: u64) -> Option<Box<Self>> {
+        Self::new(tx_env, energy_limit).map(Box::new)
     }
 }
 
 impl CreateInputs {
     /// Creates new create inputs.
-    pub fn new(tx_env: &TxEnv, gas_limit: u64, network_id: u64) -> Option<Self> {
+    pub fn new(tx_env: &TxEnv, energy_limit: u64, network_id: u64) -> Option<Self> {
         let TransactTo::Create(scheme) = tx_env.transact_to else {
             return None;
         };
@@ -86,14 +86,14 @@ impl CreateInputs {
             scheme,
             value: tx_env.value,
             init_code: tx_env.data.clone(),
-            gas_limit,
+            energy_limit,
             network_id,
         })
     }
 
     /// Returns boxed create inputs.
-    pub fn new_boxed(tx_env: &TxEnv, gas_limit: u64, network_id: u64) -> Option<Box<Self>> {
-        Self::new(tx_env, gas_limit, network_id).map(Box::new)
+    pub fn new_boxed(tx_env: &TxEnv, energy_limit: u64, network_id: u64) -> Option<Box<Self>> {
+        Self::new(tx_env, energy_limit, network_id).map(Box::new)
     }
 
     /// Returns the address that this create call will create.

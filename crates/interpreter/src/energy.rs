@@ -1,4 +1,4 @@
-//! EVM gas calculation utilities.
+//! EVM energy calculation utilities.
 
 mod calc;
 mod constants;
@@ -6,23 +6,23 @@ mod constants;
 pub use calc::*;
 pub use constants::*;
 
-/// Represents the state of gas during execution.
+/// Represents the state of energy during execution.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-pub struct Gas {
-    /// The initial gas limit. This is constant throughout execution.
+pub struct Energy {
+    /// The initial energy limit. This is constant throughout execution.
     limit: u64,
-    /// The remaining gas.
+    /// The remaining energy.
     remaining: u64,
-    /// The remaining gas, without memory expansion.
+    /// The remaining energy, without memory expansion.
     remaining_nomem: u64,
     /// The **last** memory expansion cost.
     memory: u64,
-    /// Refunded gas. This is used only at the end of execution.
+    /// Refunded energy. This is used only at the end of execution.
     refunded: i64,
 }
 
-impl Gas {
-    /// Creates a new `Gas` struct with the given gas limit.
+impl Energy {
+    /// Creates a new `Energy` struct with the given energy limit.
     #[inline]
     pub const fn new(limit: u64) -> Self {
         Self {
@@ -34,7 +34,7 @@ impl Gas {
         }
     }
 
-    /// Returns the gas limit.
+    /// Returns the energy limit.
     #[inline]
     pub const fn limit(&self) -> u64 {
         self.limit
@@ -46,13 +46,13 @@ impl Gas {
         self.memory
     }
 
-    /// Returns the total amount of gas that was refunded.
+    /// Returns the total amount of energy that was refunded.
     #[inline]
     pub const fn refunded(&self) -> i64 {
         self.refunded
     }
 
-    /// Returns the total amount of gas spent.
+    /// Returns the total amount of energy spent.
     #[inline]
     pub const fn spent(&self) -> u64 {
         self.limit - self.remaining
@@ -65,13 +65,13 @@ impl Gas {
         self.spent()
     }
 
-    /// Returns the amount of gas remaining.
+    /// Returns the amount of energy remaining.
     #[inline]
     pub const fn remaining(&self) -> u64 {
         self.remaining
     }
 
-    /// Erases a gas cost from the totals.
+    /// Erases a energy cost from the totals.
     #[inline]
     pub fn erase_cost(&mut self, returned: u64) {
         self.remaining_nomem += returned;
@@ -89,7 +89,7 @@ impl Gas {
 
     /// Set a refund value for final refund.
     ///
-    /// Max refund value is limited to Nth part (depending of fork) of gas spend.
+    /// Max refund value is limited to Nth part (depending of fork) of energy spend.
     ///
     /// Related to EIP-3529: Reduction in refunds
     #[inline]
@@ -106,7 +106,7 @@ impl Gas {
 
     /// Records an explicit cost.
     ///
-    /// Returns `false` if the gas limit is exceeded.
+    /// Returns `false` if the energy limit is exceeded.
     #[inline(always)]
     pub fn record_cost(&mut self, cost: u64) -> bool {
         let (remaining, overflow) = self.remaining.overflowing_sub(cost);
@@ -119,17 +119,17 @@ impl Gas {
         true
     }
 
-    /// Records memory expansion gas.
+    /// Records memory expansion energy.
     ///
     /// Used in [`resize_memory!`](crate::resize_memory).
     #[inline]
-    pub fn record_memory(&mut self, gas_memory: u64) -> bool {
-        if gas_memory > self.memory {
-            let (remaining, overflow) = self.remaining_nomem.overflowing_sub(gas_memory);
+    pub fn record_memory(&mut self, energy_memory: u64) -> bool {
+        if energy_memory > self.memory {
+            let (remaining, overflow) = self.remaining_nomem.overflowing_sub(energy_memory);
             if overflow {
                 return false;
             }
-            self.memory = gas_memory;
+            self.memory = energy_memory;
             self.remaining = remaining;
         }
         true

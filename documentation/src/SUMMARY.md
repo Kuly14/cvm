@@ -9,7 +9,7 @@
   - [state](./crates/revm/state.md)
   - [journaled_state](./crates/revm/journaled_state.md)
 - [Interpreter](./crates/interpreter.md)
-  - [gas](./crates/interpreter/gas.md)
+  - [energy](./crates/interpreter/energy.md)
   - [memory](./crates/interpreter/memory.md)
   - [host](./crates/interpreter/host.md)
   - [inner_models](./crates/interpreter/inner_models.md)

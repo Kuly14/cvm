@@ -11,26 +11,26 @@ The rationale behind incorporating `Blake2b` into Ethereum's suite of precompile
 - Performance: The `Blake2b` hash function offers excellent performance, particularly when processing large inputs.
 - Security: `Blake2b` also provides a high degree of security, making it a suitable choice for cryptographic operations.
 - Interoperability: This function is widely used in various parts of the ecosystem, making it a prime candidate for inclusion in Ethereum's precompiled contracts.
-- Gas Cost: The gas cost per round (F_ROUND) is specified as 1. This number was decided considering the computational complexity and the necessity to keep the blockchain efficient and prevent spamming.
+- Energy Cost: The energy cost per round (F_ROUND) is specified as 1. This number was decided considering the computational complexity and the necessity to keep the blockchain efficient and prevent spamming.
 
 ## Core Components
 
 Two primary constants provide the framework for the precompiled contract:
 
-`F_ROUND: u64`: This is the cost of each round of computation in gas units. Currently set to 1.
+`F_ROUND: u64`: This is the cost of each round of computation in energy units. Currently set to 1.
 `INPUT_LENGTH: usize`: This specifies the required length of the input data, 213 bytes in this case.
 
 ## Precompile Function - run
 
-The `run` function is the main entry point for the precompiled contract. It consumes an input byte slice and a gas limit, returning a `PrecompileResult`. This function handles input validation, gas cost computation, data manipulation, and the compression algorithm.
+The `run` function is the main entry point for the precompiled contract. It consumes an input byte slice and a energy limit, returning a `PrecompileResult`. This function handles input validation, energy cost computation, data manipulation, and the compression algorithm.
 
-It checks for correct input length and reads the final `block` flag. It then calculates the gas cost based on the number of rounds to be executed. If the gas cost exceeds the provided gas limit, it immediately returns an error.
+It checks for correct input length and reads the final `block` flag. It then calculates the energy cost based on the number of rounds to be executed. If the energy cost exceeds the provided energy limit, it immediately returns an error.
 
-Once the validation and gas cost computation are complete, it parses the input into three components: state vector `h`, message `block` vector `m`, and offset counter `t`.
+Once the validation and energy cost computation are complete, it parses the input into three components: state vector `h`, message `block` vector `m`, and offset counter `t`.
 
 Following this, it calls the `compress` function from the algo module, passing in the parsed input data and the final `block` flag.
 
-Finally, it constructs and returns the `PrecompileResult` containing the gas used and the output data.
+Finally, it constructs and returns the `PrecompileResult` containing the energy used and the output data.
 
 ## Algorithm Module - algo
 

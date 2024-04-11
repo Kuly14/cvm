@@ -60,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(interpreter)* Unify instruction fn signature ([#283](https://github.com/bluealloy/revm/pull/283))
 - *(revm)* Add prevrandao field to EnvBlock ([#271](https://github.com/bluealloy/revm/pull/271))
 - Migrate `primitive_types::U256` to `ruint::Uint<256, 4>` ([#239](https://github.com/bluealloy/revm/pull/239))
-- *(revm, revme)* gas inspector ([#222](https://github.com/bluealloy/revm/pull/222))
+- *(revm, revme)* energy inspector ([#222](https://github.com/bluealloy/revm/pull/222))
 
 ### Fixed
 - *(eip4844)* Pass eth tests, additional conditions added. ([#735](https://github.com/bluealloy/revm/pull/735))
@@ -96,20 +96,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release v22, revm v3.1.1 ([#460](https://github.com/bluealloy/revm/pull/460))
 - v21, revm v3.1.0 ([#444](https://github.com/bluealloy/revm/pull/444))
 - bump all
-- remove gas blocks ([#391](https://github.com/bluealloy/revm/pull/391))
+- remove energy blocks ([#391](https://github.com/bluealloy/revm/pull/391))
 - *(deps)* bump bytes from 1.3.0 to 1.4.0 ([#355](https://github.com/bluealloy/revm/pull/355))
 - Bump v20, changelog ([#350](https://github.com/bluealloy/revm/pull/350))
 - Cleanup imports ([#348](https://github.com/bluealloy/revm/pull/348))
 - includes to libs ([#338](https://github.com/bluealloy/revm/pull/338))
 - Creating revm-primitives, revm better errors and db components  ([#334](https://github.com/bluealloy/revm/pull/334))
 - Correct typo ([#282](https://github.com/bluealloy/revm/pull/282))
-- Integer overflow while calculating the remaining gas in GasInspector ([#287](https://github.com/bluealloy/revm/pull/287))
+- Integer overflow while calculating the remaining energy in EnergyInspector ([#287](https://github.com/bluealloy/revm/pull/287))
 - native bits ([#278](https://github.com/bluealloy/revm/pull/278))
 - *(release)* Bump revm and precompiles versions
 - Bump primitive_types. Add statetest spec
 - Bump revm to v2.3.0
 - typos ([#263](https://github.com/bluealloy/revm/pull/263))
-- *(eth/test)* Added OEF spec for tests. Skip HighGasPrice ([#261](https://github.com/bluealloy/revm/pull/261))
+- *(eth/test)* Added OEF spec for tests. Skip HighEnergyPrice ([#261](https://github.com/bluealloy/revm/pull/261))
 - Bump revm v2.1.0 ([#224](https://github.com/bluealloy/revm/pull/224))
 # v0.1.0
 date: 18.12.2021

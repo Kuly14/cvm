@@ -1,15 +1,16 @@
 // Includes.
 use crate::{
     handler::mainnet,
-    interpreter::Gas,
+    interpreter::Energy,
     primitives::{db::Database, EVMError, EVMResultGeneric, ResultAndState, Spec},
     Context, FrameResult,
 };
 use std::sync::Arc;
 
 /// Reimburse the caller with ethereum it didn't spent.
-pub type ReimburseCallerHandle<'a, EXT, DB> =
-    Arc<dyn Fn(&mut Context<EXT, DB>, &Gas) -> EVMResultGeneric<(), <DB as Database>::Error> + 'a>;
+pub type ReimburseCallerHandle<'a, EXT, DB> = Arc<
+    dyn Fn(&mut Context<EXT, DB>, &Energy) -> EVMResultGeneric<(), <DB as Database>::Error> + 'a,
+>;
 
 /// Reward beneficiary with transaction rewards.
 pub type RewardBeneficiaryHandle<'a, EXT, DB> = ReimburseCallerHandle<'a, EXT, DB>;
@@ -60,21 +61,21 @@ impl<'a, EXT: 'a, DB: Database + 'a> PostExecutionHandler<'a, EXT, DB> {
 }
 
 impl<'a, EXT, DB: Database> PostExecutionHandler<'a, EXT, DB> {
-    /// Reimburse the caller with gas that were not spend.
+    /// Reimburse the caller with energy that were not spend.
     pub fn reimburse_caller(
         &self,
         context: &mut Context<EXT, DB>,
-        gas: &Gas,
+        energy: &Energy,
     ) -> Result<(), EVMError<DB::Error>> {
-        (self.reimburse_caller)(context, gas)
+        (self.reimburse_caller)(context, energy)
     }
     /// Reward beneficiary
     pub fn reward_beneficiary(
         &self,
         context: &mut Context<EXT, DB>,
-        gas: &Gas,
+        energy: &Energy,
     ) -> Result<(), EVMError<DB::Error>> {
-        (self.reward_beneficiary)(context, gas)
+        (self.reward_beneficiary)(context, energy)
     }
 
     /// Returns the output of transaction.

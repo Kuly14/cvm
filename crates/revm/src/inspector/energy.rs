@@ -1,4 +1,4 @@
-//! GasIspector. Helper Inspector to calculate gas for others.
+//! EnergyIspector. Helper Inspector to calculate energy for others.
 
 use revm_interpreter::CallOutcome;
 
@@ -8,31 +8,31 @@ use crate::{
     EvmContext, Inspector,
 };
 
-/// Helper [Inspector] that keeps track of gas.
+/// Helper [Inspector] that keeps track of energy.
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Default)]
-pub struct GasInspector {
-    gas_remaining: u64,
-    last_gas_cost: u64,
+pub struct EnergyInspector {
+    energy_remaining: u64,
+    last_energy_cost: u64,
 }
 
-impl GasInspector {
-    pub fn gas_remaining(&self) -> u64 {
-        self.gas_remaining
+impl EnergyInspector {
+    pub fn energy_remaining(&self) -> u64 {
+        self.energy_remaining
     }
 
-    pub fn last_gas_cost(&self) -> u64 {
-        self.last_gas_cost
+    pub fn last_energy_cost(&self) -> u64 {
+        self.last_energy_cost
     }
 }
 
-impl<DB: Database> Inspector<DB> for GasInspector {
+impl<DB: Database> Inspector<DB> for EnergyInspector {
     fn initialize_interp(
         &mut self,
         interp: &mut crate::interpreter::Interpreter,
         _context: &mut EvmContext<DB>,
     ) {
-        self.gas_remaining = interp.gas.limit();
+        self.energy_remaining = interp.energy.limit();
     }
 
     fn step(
@@ -40,7 +40,7 @@ impl<DB: Database> Inspector<DB> for GasInspector {
         interp: &mut crate::interpreter::Interpreter,
         _context: &mut EvmContext<DB>,
     ) {
-        self.gas_remaining = interp.gas.remaining();
+        self.energy_remaining = interp.energy.remaining();
     }
 
     fn step_end(
@@ -48,9 +48,9 @@ impl<DB: Database> Inspector<DB> for GasInspector {
         interp: &mut crate::interpreter::Interpreter,
         _context: &mut EvmContext<DB>,
     ) {
-        let remaining = interp.gas.remaining();
-        self.last_gas_cost = self.gas_remaining.saturating_sub(remaining);
-        self.gas_remaining = remaining;
+        let remaining = interp.energy.remaining();
+        self.last_energy_cost = self.energy_remaining.saturating_sub(remaining);
+        self.energy_remaining = remaining;
     }
 
     fn call_end(
@@ -62,9 +62,9 @@ impl<DB: Database> Inspector<DB> for GasInspector {
         if outcome.result.result.is_error() {
             outcome
                 .result
-                .gas
-                .record_cost(outcome.result.gas.remaining());
-            self.gas_remaining = 0;
+                .energy
+                .record_cost(outcome.result.energy.remaining());
+            self.energy_remaining = 0;
         }
         outcome
     }
@@ -78,9 +78,9 @@ impl<DB: Database> Inspector<DB> for GasInspector {
         if outcome.result.result.is_error() {
             outcome
                 .result
-                .gas
-                .record_cost(outcome.result.gas.remaining());
-            self.gas_remaining = 0;
+                .energy
+                .record_cost(outcome.result.energy.remaining());
+            self.energy_remaining = 0;
         }
         outcome
     }
@@ -93,7 +93,7 @@ mod tests {
     use revm_interpreter::CreateOutcome;
 
     use crate::{
-        inspectors::GasInspector,
+        inspectors::EnergyInspector,
         interpreter::{CallInputs, CreateInputs, Interpreter},
         primitives::Log,
         Database, EvmContext, Inspector,
@@ -103,28 +103,28 @@ mod tests {
     #[derive(Default, Debug)]
     struct StackInspector {
         pc: usize,
-        gas_inspector: GasInspector,
-        gas_remaining_steps: Vec<(usize, u64)>,
+        energy_inspector: EnergyInspector,
+        energy_remaining_steps: Vec<(usize, u64)>,
     }
 
     impl<DB: Database> Inspector<DB> for StackInspector {
         fn initialize_interp(&mut self, interp: &mut Interpreter, context: &mut EvmContext<DB>) {
-            self.gas_inspector.initialize_interp(interp, context);
+            self.energy_inspector.initialize_interp(interp, context);
         }
 
         fn step(&mut self, interp: &mut Interpreter, context: &mut EvmContext<DB>) {
             self.pc = interp.program_counter();
-            self.gas_inspector.step(interp, context);
+            self.energy_inspector.step(interp, context);
         }
 
         fn log(&mut self, context: &mut EvmContext<DB>, log: &Log) {
-            self.gas_inspector.log(context, log);
+            self.energy_inspector.log(context, log);
         }
 
         fn step_end(&mut self, interp: &mut Interpreter, context: &mut EvmContext<DB>) {
-            self.gas_inspector.step_end(interp, context);
-            self.gas_remaining_steps
-                .push((self.pc, self.gas_inspector.gas_remaining()));
+            self.energy_inspector.step_end(interp, context);
+            self.energy_remaining_steps
+                .push((self.pc, self.energy_inspector.energy_remaining()));
         }
 
         fn call(
@@ -132,7 +132,7 @@ mod tests {
             context: &mut EvmContext<DB>,
             call: &mut CallInputs,
         ) -> Option<CallOutcome> {
-            self.gas_inspector.call(context, call)
+            self.energy_inspector.call(context, call)
         }
 
         fn call_end(
@@ -141,7 +141,7 @@ mod tests {
             inputs: &CallInputs,
             outcome: CallOutcome,
         ) -> CallOutcome {
-            self.gas_inspector.call_end(context, inputs, outcome)
+            self.energy_inspector.call_end(context, inputs, outcome)
         }
 
         fn create(
@@ -149,7 +149,7 @@ mod tests {
             context: &mut EvmContext<DB>,
             call: &mut CreateInputs,
         ) -> Option<CreateOutcome> {
-            self.gas_inspector.create(context, call);
+            self.energy_inspector.create(context, call);
             None
         }
 
@@ -159,12 +159,12 @@ mod tests {
             inputs: &CreateInputs,
             outcome: CreateOutcome,
         ) -> CreateOutcome {
-            self.gas_inspector.create_end(context, inputs, outcome)
+            self.energy_inspector.create_end(context, inputs, outcome)
         }
     }
 
     #[test]
-    fn test_gas_inspector() {
+    fn test_energy_inspector() {
         use crate::{
             db::BenchmarkDB,
             inspector::inspector_handle_register,
@@ -198,7 +198,7 @@ mod tests {
                 tx.caller = address!("1000000000000000000000000000000000000000");
                 tx.transact_to =
                     TransactTo::Call(address!("0000000000000000000000000000000000000000"));
-                tx.gas_limit = 21100;
+                tx.energy_limit = 21100;
             })
             .append_handler_register(inspector_handle_register)
             .build();
@@ -208,7 +208,7 @@ mod tests {
 
         let inspector = evm.into_context().external;
 
-        // starting from 100gas
+        // starting from 100energy
         let steps = vec![
             // push1 -3
             (0, 97),
@@ -222,6 +222,6 @@ mod tests {
             (12, 83),
         ];
 
-        assert_eq!(inspector.gas_remaining_steps, steps);
+        assert_eq!(inspector.energy_remaining_steps, steps);
     }
 }

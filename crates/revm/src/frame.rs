@@ -4,7 +4,7 @@ use crate::{
     JournalCheckpoint,
 };
 use core::ops::Range;
-use revm_interpreter::{CallOutcome, CreateOutcome, Gas, InstructionResult, InterpreterResult};
+use revm_interpreter::{CallOutcome, CreateOutcome, Energy, InstructionResult, InterpreterResult};
 use std::boxed::Box;
 /// Call CallStackFrame.
 #[derive(Debug)]
@@ -64,21 +64,21 @@ impl FrameResult {
         }
     }
 
-    /// Returns reference to gas.
+    /// Returns reference to energy.
     #[inline]
-    pub fn gas(&self) -> &Gas {
+    pub fn energy(&self) -> &Energy {
         match self {
-            FrameResult::Call(outcome) => &outcome.result.gas,
-            FrameResult::Create(outcome) => &outcome.result.gas,
+            FrameResult::Call(outcome) => &outcome.result.energy,
+            FrameResult::Create(outcome) => &outcome.result.energy,
         }
     }
 
     /// Returns mutable reference to interpreter result.
     #[inline]
-    pub fn gas_mut(&mut self) -> &mut Gas {
+    pub fn energy_mut(&mut self) -> &mut Energy {
         match self {
-            FrameResult::Call(outcome) => &mut outcome.result.gas,
-            FrameResult::Create(outcome) => &mut outcome.result.gas,
+            FrameResult::Call(outcome) => &mut outcome.result.energy,
+            FrameResult::Create(outcome) => &mut outcome.result.energy,
         }
     }
 

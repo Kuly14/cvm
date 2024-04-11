@@ -11,7 +11,7 @@ use std::{borrow::ToOwned, boxed::Box};
 
 use crate::{
     primitives::Bytes, push, push_b256, return_ok, return_revert, CallInputs, CallOutcome,
-    CreateInputs, CreateOutcome, Gas, Host, InstructionResult,
+    CreateInputs, CreateOutcome, Energy, Host, InstructionResult,
 };
 use core::cmp::min;
 use revm_primitives::U256;
@@ -26,8 +26,8 @@ pub struct Interpreter {
     /// The execution control flag. If this is not set to `Continue`, the interpreter will stop
     /// execution.
     pub instruction_result: InstructionResult,
-    /// The gas state.
-    pub gas: Gas,
+    /// The energy state.
+    pub energy: Energy,
     /// Shared memory.
     ///
     /// Note: This field is only set while running the interpreter loop.
@@ -57,8 +57,8 @@ pub struct InterpreterResult {
     pub result: InstructionResult,
     /// The output of the instruction execution.
     pub output: Bytes,
-    /// The gas usage information.
-    pub gas: Gas,
+    /// The energy usage information.
+    pub energy: Energy,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -114,11 +114,11 @@ impl InterpreterAction {
 
 impl Interpreter {
     /// Create new interpreter
-    pub fn new(contract: Contract, gas_limit: u64, is_static: bool) -> Self {
+    pub fn new(contract: Contract, energy_limit: u64, is_static: bool) -> Self {
         Self {
             instruction_pointer: contract.bytecode.as_ptr(),
             contract,
-            gas: Gas::new(gas_limit),
+            energy: Energy::new(energy_limit),
             instruction_result: InstructionResult::Continue,
             is_static,
             return_data_buffer: Bytes::new(),
@@ -142,8 +142,8 @@ impl Interpreter {
     /// The function updates the `return_data_buffer` with the data from `create_outcome`.
     /// Depending on the `InstructionResult` indicated by `create_outcome`, it performs one of the following:
     ///
-    /// - `Ok`: Pushes the address from `create_outcome` to the stack, updates gas costs, and records any gas refunds.
-    /// - `Revert`: Pushes `U256::ZERO` to the stack and updates gas costs.
+    /// - `Ok`: Pushes the address from `create_outcome` to the stack, updates energy costs, and records any energy refunds.
+    /// - `Revert`: Pushes `U256::ZERO` to the stack and updates energy costs.
     /// - `FatalExternalError`: Sets the `instruction_result` to `InstructionResult::FatalExternalError`.
     /// - `Default`: Pushes `U256::ZERO` to the stack.
     ///
@@ -151,7 +151,7 @@ impl Interpreter {
     ///
     /// - Updates `return_data_buffer` with the data from `create_outcome`.
     /// - Modifies the stack by pushing values depending on the `InstructionResult`.
-    /// - Updates gas costs and records refunds in the interpreter's `gas` field.
+    /// - Updates energy costs and records refunds in the interpreter's `energy` field.
     /// - May alter `instruction_result` in case of external errors.
     pub fn insert_create_outcome(&mut self, create_outcome: CreateOutcome) {
         self.instruction_result = InstructionResult::Continue;
@@ -169,12 +169,13 @@ impl Interpreter {
             return_ok!() => {
                 let address = create_outcome.address;
                 push_b256!(self, address.unwrap_or_default().into_word());
-                self.gas.erase_cost(create_outcome.gas().remaining());
-                self.gas.record_refund(create_outcome.gas().refunded());
+                self.energy.erase_cost(create_outcome.energy().remaining());
+                self.energy
+                    .record_refund(create_outcome.energy().refunded());
             }
             return_revert!() => {
                 push!(self, U256::ZERO);
-                self.gas.erase_cost(create_outcome.gas().remaining());
+                self.energy.erase_cost(create_outcome.energy().remaining());
             }
             InstructionResult::FatalExternalError => {
                 panic!("Fatal external error in insert_create_outcome");
@@ -189,22 +190,22 @@ impl Interpreter {
     ///
     /// This function takes the result of a call, represented by `CallOutcome`,
     /// and updates the virtual machine's state accordingly. It involves updating
-    /// the return data buffer, handling gas accounting, and setting the memory
+    /// the return data buffer, handling energy accounting, and setting the memory
     /// in shared storage based on the outcome of the call.
     ///
     /// # Arguments
     ///
     /// * `shared_memory` - A mutable reference to the shared memory used by the virtual machine.
     /// * `call_outcome` - The outcome of the call to be processed, containing details such as
-    ///   instruction result, gas information, and output data.
+    ///   instruction result, energy information, and output data.
     ///
     /// # Behavior
     ///
     /// The function first copies the output data from the call outcome to the virtual machine's
     /// return data buffer. It then checks the instruction result from the call outcome:
     ///
-    /// - `return_ok!()`: Processes successful execution, refunds gas, and updates shared memory.
-    /// - `return_revert!()`: Handles a revert by only updating the gas usage and shared memory.
+    /// - `return_ok!()`: Processes successful execution, refunds energy, and updates shared memory.
+    /// - `return_revert!()`: Handles a revert by only updating the energy usage and shared memory.
     /// - `InstructionResult::FatalExternalError`: Sets the instruction result to a fatal external error.
     /// - Any other result: No specific action is taken.
     pub fn insert_call_outcome(
@@ -221,16 +222,16 @@ impl Interpreter {
 
         match call_outcome.instruction_result() {
             return_ok!() => {
-                // return unspend gas.
-                let remaining = call_outcome.gas().remaining();
-                let refunded = call_outcome.gas().refunded();
-                self.gas.erase_cost(remaining);
-                self.gas.record_refund(refunded);
+                // return unspend energy.
+                let remaining = call_outcome.energy().remaining();
+                let refunded = call_outcome.energy().refunded();
+                self.energy.erase_cost(remaining);
+                self.energy.record_refund(refunded);
                 shared_memory.set(out_offset, &self.return_data_buffer[..target_len]);
                 push!(self, U256::from(1));
             }
             return_revert!() => {
-                self.gas.erase_cost(call_outcome.gas().remaining());
+                self.energy.erase_cost(call_outcome.energy().remaining());
                 shared_memory.set(out_offset, &self.return_data_buffer[..target_len]);
                 push!(self, U256::ZERO);
             }
@@ -255,10 +256,10 @@ impl Interpreter {
         &self.contract
     }
 
-    /// Returns a reference to the interpreter's gas state.
+    /// Returns a reference to the interpreter's energy state.
     #[inline]
-    pub fn gas(&self) -> &Gas {
-        &self.gas
+    pub fn energy(&self) -> &Energy {
+        &self.energy
     }
 
     /// Returns a reference to the interpreter's stack.
@@ -330,7 +331,7 @@ impl Interpreter {
                 result: self.instruction_result,
                 // return empty bytecode
                 output: Bytes::new(),
-                gas: self.gas,
+                energy: self.energy,
             },
         }
     }

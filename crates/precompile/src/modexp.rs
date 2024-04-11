@@ -17,15 +17,15 @@ pub const BERLIN: PrecompileWithAddress =
 
 /// See: <https://eips.ethereum.org/EIPS/eip-198>
 /// See: <https://etherscan.io/address/0000000000000000000000000000000000000005>
-pub fn byzantium_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
-    run_inner(input, gas_limit, 0, |a, b, c, d| {
-        byzantium_gas_calc(a, b, c, d)
+pub fn byzantium_run(input: &Bytes, energy_limit: u64) -> PrecompileResult {
+    run_inner(input, energy_limit, 0, |a, b, c, d| {
+        byzantium_energy_calc(a, b, c, d)
     })
 }
 
-pub fn berlin_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
-    run_inner(input, gas_limit, 200, |a, b, c, d| {
-        berlin_gas_calc(a, b, c, d)
+pub fn berlin_run(input: &Bytes, energy_limit: u64) -> PrecompileResult {
+    run_inner(input, energy_limit, 200, |a, b, c, d| {
+        berlin_energy_calc(a, b, c, d)
     })
 }
 
@@ -44,13 +44,18 @@ pub fn calculate_iteration_count(exp_length: u64, exp_highp: &U256) -> u64 {
     max(iteration_count, 1)
 }
 
-pub fn run_inner<F>(input: &[u8], gas_limit: u64, min_gas: u64, calc_gas: F) -> PrecompileResult
+pub fn run_inner<F>(
+    input: &[u8],
+    energy_limit: u64,
+    min_energy: u64,
+    calc_energy: F,
+) -> PrecompileResult
 where
     F: FnOnce(u64, u64, u64, &U256) -> u64,
 {
-    // If there is no minimum gas, return error.
-    if min_gas > gas_limit {
-        return Err(Error::OutOfGas);
+    // If there is no minimum energy, return error.
+    if min_energy > energy_limit {
+        return Err(Error::OutOfEnergy);
     }
 
     // The format of input is:
@@ -74,7 +79,7 @@ where
 
     // Handle a special case when both the base and mod length are zero.
     if base_len == 0 && mod_len == 0 {
-        return Ok((min_gas, Bytes::new()));
+        return Ok((min_energy, Bytes::new()));
     }
 
     // Cast exponent length to usize, since it does not make sense to handle larger values.
@@ -96,10 +101,10 @@ where
         U256::from_be_bytes(out.into_owned())
     };
 
-    // Check if we have enough gas.
-    let gas_cost = calc_gas(base_len as u64, exp_len as u64, mod_len as u64, &exp_highp);
-    if gas_cost > gas_limit {
-        return Err(Error::OutOfGas);
+    // Check if we have enough energy.
+    let energy_cost = calc_energy(base_len as u64, exp_len as u64, mod_len as u64, &exp_highp);
+    if energy_cost > energy_limit {
+        return Err(Error::OutOfEnergy);
     }
 
     // Padding is needed if the input does not contain all 3 values.
@@ -113,10 +118,13 @@ where
     let output = modexp(base, exponent, modulus);
 
     // left pad the result to modulus length. bytes will always by less or equal to modulus length.
-    Ok((gas_cost, left_pad_vec(&output, mod_len).into_owned().into()))
+    Ok((
+        energy_cost,
+        left_pad_vec(&output, mod_len).into_owned().into(),
+    ))
 }
 
-pub fn byzantium_gas_calc(base_len: u64, exp_len: u64, mod_len: u64, exp_highp: &U256) -> u64 {
+pub fn byzantium_energy_calc(base_len: u64, exp_len: u64, mod_len: u64, exp_highp: &U256) -> u64 {
     // output of this function is bounded by 2^128
     fn mul_complexity(x: u64) -> U256 {
         if x <= 64 {
@@ -134,13 +142,13 @@ pub fn byzantium_gas_calc(base_len: u64, exp_len: u64, mod_len: u64, exp_highp: 
     let mul = mul_complexity(core::cmp::max(mod_len, base_len));
     let iter_count = U256::from(calculate_iteration_count(exp_len, exp_highp));
     // mul * iter_count bounded by 2^195 < 2^256 (no overflow)
-    let gas = (mul * iter_count) / U256::from(20);
-    gas.saturating_to()
+    let energy = (mul * iter_count) / U256::from(20);
+    energy.saturating_to()
 }
 
-// Calculate gas cost according to EIP 2565:
+// Calculate energy cost according to EIP 2565:
 // https://eips.ethereum.org/EIPS/eip-2565
-pub fn berlin_gas_calc(
+pub fn berlin_energy_calc(
     base_length: u64,
     exp_length: u64,
     mod_length: u64,
@@ -158,8 +166,8 @@ pub fn berlin_gas_calc(
 
     let multiplication_complexity = calculate_multiplication_complexity(base_length, mod_length);
     let iteration_count = calculate_iteration_count(exp_length, exp_highp);
-    let gas = (multiplication_complexity * U256::from(iteration_count)) / U256::from(3);
-    max(200, gas.saturating_to())
+    let energy = (multiplication_complexity * U256::from(iteration_count)) / U256::from(3);
+    max(200, energy.saturating_to())
 }
 
 #[cfg(test)]
@@ -332,25 +340,25 @@ mod tests {
         }
     ];
 
-    const BYZANTIUM_GAS: [u64; 19] = [
+    const BYZANTIUM_ENERGY: [u64; 19] = [
         360_217, 13_056, 13_056, 13_056, 204, 204, 3_276, 665, 665, 10_649, 1_894, 1_894, 30_310,
         5_580, 5_580, 89_292, 17_868, 17_868, 285_900,
     ];
 
-    const BERLIN_GAS: [u64; 19] = [
+    const BERLIN_ENERGY: [u64; 19] = [
         44_954, 1_360, 1_360, 1_360, 200, 200, 341, 200, 200, 1_365, 341, 341, 5_461, 1_365, 1_365,
         21_845, 5_461, 5_461, 87_381,
     ];
 
     #[test]
-    fn test_byzantium_modexp_gas() {
-        for (test, &test_gas) in TESTS.iter().zip(BYZANTIUM_GAS.iter()) {
+    fn test_byzantium_modexp_energy() {
+        for (test, &test_energy) in TESTS.iter().zip(BYZANTIUM_ENERGY.iter()) {
             let input = hex::decode(test.input).unwrap().into();
             let res = byzantium_run(&input, 100_000_000).unwrap();
             let expected = hex::decode(test.expected).unwrap();
             assert_eq!(
-                res.0, test_gas,
-                "used gas not matching for test: {}",
+                res.0, test_energy,
+                "used energy not matching for test: {}",
                 test.name
             );
             assert_eq!(res.1, expected, "test:{}", test.name);
@@ -358,14 +366,14 @@ mod tests {
     }
 
     #[test]
-    fn test_berlin_modexp_gas() {
-        for (test, &test_gas) in TESTS.iter().zip(BERLIN_GAS.iter()) {
+    fn test_berlin_modexp_energy() {
+        for (test, &test_energy) in TESTS.iter().zip(BERLIN_ENERGY.iter()) {
             let input = hex::decode(test.input).unwrap().into();
             let res = berlin_run(&input, 100_000_000).unwrap();
             let expected = hex::decode(test.expected).unwrap();
             assert_eq!(
-                res.0, test_gas,
-                "used gas not matching for test: {}",
+                res.0, test_energy,
+                "used energy not matching for test: {}",
                 test.name
             );
             assert_eq!(res.1, expected, "test:{}", test.name);

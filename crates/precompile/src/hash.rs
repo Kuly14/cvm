@@ -14,10 +14,10 @@ pub const RIPEMD160: PrecompileWithAddress = PrecompileWithAddress(
 /// See: <https://ethereum.github.io/yellowpaper/paper.pdf>
 /// See: <https://docs.soliditylang.org/en/develop/units-and-global-variables.html#mathematical-and-cryptographic-functions>
 /// See: <https://etherscan.io/address/0000000000000000000000000000000000000002>
-pub fn sha256_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
+pub fn sha256_run(input: &Bytes, energy_limit: u64) -> PrecompileResult {
     let cost = calc_linear_cost_u32(input.len(), 60, 12);
-    if cost > gas_limit {
-        Err(Error::OutOfGas)
+    if cost > energy_limit {
+        Err(Error::OutOfEnergy)
     } else {
         let output = sha2::Sha256::digest(input);
         Ok((cost, output.to_vec().into()))
@@ -27,16 +27,16 @@ pub fn sha256_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
 /// See: <https://ethereum.github.io/yellowpaper/paper.pdf>
 /// See: <https://docs.soliditylang.org/en/develop/units-and-global-variables.html#mathematical-and-cryptographic-functions>
 /// See: <https://etherscan.io/address/0000000000000000000000000000000000000003>
-pub fn ripemd160_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
-    let gas_used = calc_linear_cost_u32(input.len(), 600, 120);
-    if gas_used > gas_limit {
-        Err(Error::OutOfGas)
+pub fn ripemd160_run(input: &Bytes, energy_limit: u64) -> PrecompileResult {
+    let energy_used = calc_linear_cost_u32(input.len(), 600, 120);
+    if energy_used > energy_limit {
+        Err(Error::OutOfEnergy)
     } else {
         let mut hasher = ripemd::Ripemd160::new();
         hasher.update(input);
 
         let mut output = [0u8; 32];
         hasher.finalize_into((&mut output[12..]).into());
-        Ok((gas_used, output.to_vec().into()))
+        Ok((energy_used, output.to_vec().into()))
     }
 }

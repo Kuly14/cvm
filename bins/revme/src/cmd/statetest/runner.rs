@@ -10,7 +10,7 @@ use revm::{
     inspectors::TracerEip3155,
     interpreter::CreateScheme,
     primitives::{
-        calc_excess_blob_gas, sha3, Bytecode, Bytes, EVMResultGeneric, Env, ExecutionResult,
+        calc_excess_blob_energy, sha3, Bytecode, Bytes, EVMResultGeneric, Env, ExecutionResult,
         SpecId, TransactTo, B256, U256,
     },
     Evm, State,
@@ -87,8 +87,8 @@ fn skip_test(path: &Path) -> bool {
         // Need to handle Test errors
         | "transactionIntinsicBug.json"
 
-        // Test check if gas price overflows, we handle this correctly but does not match tests specific exception.
-        | "HighGasPrice.json"
+        // Test check if energy price overflows, we handle this correctly but does not match tests specific exception.
+        | "HighEnergyPrice.json"
         | "CREATE_HighNonce.json"
         | "CREATE_HighNonceMinus1.json"
         | "CreateTransactionHighNonce.json"
@@ -126,7 +126,7 @@ fn check_evm_execution<EXT>(
                     "stateRoot": state_root,
                     "logsRoot": logs_root,
                     "output": exec_result.as_ref().ok().and_then(|r| r.output().cloned()).unwrap_or_default(),
-                    "gasUsed": exec_result.as_ref().ok().map(|r| r.gas_used()).unwrap_or_default(),
+                    "energyUsed": exec_result.as_ref().ok().map(|r| r.energy_used()).unwrap_or_default(),
                     "pass": error.is_none(),
                     "errorMsg": error.unwrap_or_default(),
                     "evmResult": exec_result.as_ref().err().map(|e| e.to_string()).unwrap_or("Ok".to_string()),
@@ -134,7 +134,7 @@ fn check_evm_execution<EXT>(
                     "fork": evm.handler.cfg().spec_id,
                     "test": test_name,
                     "d": test.indexes.data,
-                    "g": test.indexes.gas,
+                    "g": test.indexes.energy,
                     "v": test.indexes.value,
             });
             eprintln!("{json}");
@@ -251,23 +251,23 @@ pub fn execute_test_suite(
         env.block.number = unit.env.current_number;
         env.block.coinbase = unit.env.current_coinbase;
         env.block.timestamp = unit.env.current_timestamp;
-        env.block.gas_limit = unit.env.current_gas_limit;
+        env.block.energy_limit = unit.env.current_energy_limit;
         env.block.basefee = unit.env.current_base_fee.unwrap_or_default();
         env.block.difficulty = unit.env.current_difficulty;
         // after the Merge prevrandao replaces mix_hash field in block and replaced difficulty opcode in EVM.
         env.block.prevrandao = unit.env.current_random;
         // EIP-4844
-        if let Some(current_excess_blob_gas) = unit.env.current_excess_blob_gas {
+        if let Some(current_excess_blob_energy) = unit.env.current_excess_blob_energy {
             env.block
-                .set_blob_excess_gas_and_price(current_excess_blob_gas.to());
-        } else if let (Some(parent_blob_gas_used), Some(parent_excess_blob_gas)) = (
-            unit.env.parent_blob_gas_used,
-            unit.env.parent_excess_blob_gas,
+                .set_blob_excess_energy_and_price(current_excess_blob_energy.to());
+        } else if let (Some(parent_blob_energy_used), Some(parent_excess_blob_energy)) = (
+            unit.env.parent_blob_energy_used,
+            unit.env.parent_excess_blob_energy,
         ) {
             env.block
-                .set_blob_excess_gas_and_price(calc_excess_blob_gas(
-                    parent_blob_gas_used.to(),
-                    parent_excess_blob_gas.to(),
+                .set_blob_excess_energy_and_price(calc_excess_blob_energy(
+                    parent_blob_energy_used.to(),
+                    parent_excess_blob_energy.to(),
                 ));
         }
 
@@ -280,15 +280,15 @@ pub fn execute_test_suite(
                 kind: TestErrorKind::UnknownPrivateKey(unit.transaction.secret_key),
             })?
         };
-        env.tx.gas_price = unit
+        env.tx.energy_price = unit
             .transaction
-            .gas_price
-            .or(unit.transaction.max_fee_per_gas)
+            .energy_price
+            .or(unit.transaction.max_fee_per_energy)
             .unwrap_or_default();
-        env.tx.gas_priority_fee = unit.transaction.max_priority_fee_per_gas;
+        env.tx.energy_priority_fee = unit.transaction.max_priority_fee_per_energy;
         // EIP-4844
         env.tx.blob_hashes = unit.transaction.blob_versioned_hashes;
-        env.tx.max_fee_per_blob_gas = unit.transaction.max_fee_per_blob_gas;
+        env.tx.max_fee_per_blob_energy = unit.transaction.max_fee_per_blob_energy;
 
         // post and execution
         for (spec_name, tests) in unit.post {
@@ -304,7 +304,8 @@ pub fn execute_test_suite(
             let spec_id = spec_name.to_spec_id();
 
             for (index, test) in tests.into_iter().enumerate() {
-                env.tx.gas_limit = unit.transaction.gas_limit[test.indexes.gas].saturating_to();
+                env.tx.energy_limit =
+                    unit.transaction.energy_limit[test.indexes.energy].saturating_to();
 
                 env.tx.data = unit
                     .transaction

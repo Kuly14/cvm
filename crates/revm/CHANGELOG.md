@@ -13,15 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - *(TracerEip3155)* clear Inspector data after transaction. ([#1230](https://github.com/bluealloy/revm/pull/1230))
-- *(GasInspector)* calculate correct remaining gas after call return ([#1236](https://github.com/bluealloy/revm/pull/1236))
-- fix eip3155 summary gas_used bug and add fork name ([#1216](https://github.com/bluealloy/revm/pull/1216))
+- *(EnergyInspector)* calculate correct remaining energy after call return ([#1236](https://github.com/bluealloy/revm/pull/1236))
+- fix eip3155 summary energy_used bug and add fork name ([#1216](https://github.com/bluealloy/revm/pull/1216))
 
 ### Other
 - use uint macro & fix various small things ([#1253](https://github.com/bluealloy/revm/pull/1253))
 - *(deps)* bump tokio from 1.36.0 to 1.37.0 ([#1244](https://github.com/bluealloy/revm/pull/1244))
 - *(interpreter)* unbox contract field ([#1228](https://github.com/bluealloy/revm/pull/1228))
 - *(primitives)* kzg intro ([#1209](https://github.com/bluealloy/revm/pull/1209))
-- *(interpreter)* keep track of remaining gas rather than spent ([#1221](https://github.com/bluealloy/revm/pull/1221))
+- *(interpreter)* keep track of remaining energy rather than spent ([#1221](https://github.com/bluealloy/revm/pull/1221))
 - Improve `EthersDB` ([#1208](https://github.com/bluealloy/revm/pull/1208))
 
 ## [7.2.0](https://github.com/bluealloy/revm/compare/revm-v7.1.0...revm-v7.2.0) - 2024-03-19
@@ -59,9 +59,9 @@ This release got yanked and replaced with 7.1.0
 
 ### Fixed
 - *(revme)* revme error output and remove double summary ([#1169](https://github.com/bluealloy/revm/pull/1169))
-- gas cost calculation ([#1166](https://github.com/bluealloy/revm/pull/1166))
+- energy cost calculation ([#1166](https://github.com/bluealloy/revm/pull/1166))
 - reset tstorage on finalize ([#1168](https://github.com/bluealloy/revm/pull/1168))
-- make `feature = "optional_gas_refund"` work ([#1134](https://github.com/bluealloy/revm/pull/1134))
+- make `feature = "optional_energy_refund"` work ([#1134](https://github.com/bluealloy/revm/pull/1134))
 
 ### Other
 - *(deps)* bump ethers-contract from 2.0.13 to 2.0.14 ([#1161](https://github.com/bluealloy/revm/pull/1161))
@@ -154,7 +154,7 @@ Few major renaming: EVMImpl to Evm, EVM to EvmFactory and EVMData to EvmContext.
 ### Fixed
 - fix previous commit ([#1044](https://github.com/bluealloy/revm/pull/1044))
 - *(State)* Preserve original values on delete revert ([#1010](https://github.com/bluealloy/revm/pull/1010))
-- optimism gas refunds ([#989](https://github.com/bluealloy/revm/pull/989))
+- optimism energy refunds ([#989](https://github.com/bluealloy/revm/pull/989))
 - dont calculate initcode keccak on CREATE ([#969](https://github.com/bluealloy/revm/pull/969))
 - *(ci)* Workflow Touchups ([#901](https://github.com/bluealloy/revm/pull/901))
 - safer stack ([#879](https://github.com/bluealloy/revm/pull/879))
@@ -349,7 +349,7 @@ Full git log:
 * 30bfa73 - fix(doc): Inline documentation of re-exports (#560) (9 weeks ago) <Yiannis Marangos>
 * 10f81ba - optimize stack usage for recursive `call` and `create` programs (#522) (3 months ago) <Valentin Mihov>
 * 323370a - fix comment (#529) (3 months ago) <Ethan-000>
-* 51072e6 - consume all gas on invalid opcode (#500) (3 months ago) <teddav>
+* 51072e6 - consume all energy on invalid opcode (#500) (3 months ago) <teddav>
 * 63f9460 - chore(deps): bump auto_impl from 1.0.1 to 1.1.0 (#478) (3 months ago) <dependabot[bot]>
 * 3a77ee5 - docs: fix comment typo (#517) (3 months ago) <Sabnock>
 * d343858 - fix: typo in eip-3155 output (#497) (4 months ago) <Perama>
@@ -390,8 +390,8 @@ bump revm dependency versions.
 date: 04.04.2022
 
 Main changes can be summarizes in:
-* f91d5f9 - refactor: remove gas blocks (#391) (5 weeks ago) <Bjerg>
-    * removal of gas block allowed us to have more compact analysis data. Gas block from beginning didn't have big impact on performance but introduced not intuitive gas calculations that was
+* f91d5f9 - refactor: remove energy blocks (#391) (5 weeks ago) <Bjerg>
+    * removal of energy block allowed us to have more compact analysis data. Energy block from beginning didn't have big impact on performance but introduced not intuitive energy calculations that was
     source of some bugs. 
 * 08ce847 - feat(Shanghai): All EIPs: push0, warm coinbase, limit/measure initcode (#376) (7 weeks ago) <rakita>
     * revm is Shanghai ready
@@ -433,7 +433,7 @@ Changelogs:
 * 3a17ca8 - feat: add b256<->u256 from impls (#398) (4 weeks ago) <Matthias Seitz>
 * 3789509 - feat: add API to retrieve unpadded bytecode (#397) (5 weeks ago) <Wodann>
 * 5ab154a - chore(deps): bump tokio from 1.25.0 to 1.26.0 (#395) (5 weeks ago) <dependabot[bot]>
-* f91d5f9 - refactor: remove gas blocks (#391) (5 weeks ago) <Bjerg>
+* f91d5f9 - refactor: remove energy blocks (#391) (5 weeks ago) <Bjerg>
 * 8dc024a - Add copyright start year (#387) (5 weeks ago) <Marius Kjærstad>
 * 4d2f074 - feat: add EVM::with_env (#385) (6 weeks ago) <Matthias Seitz>
 * 5efd9d1 - impl NonceTooHigh/ NonceTooLow checks (#383) (6 weeks ago) <gd>
@@ -453,13 +453,13 @@ Changelogs:
 * b4c62e9 - chore: rename Then to Than (#368) (7 weeks ago) <Matthias Seitz>
 * 1c3e9e3 - improvement: use alloc & core for Arc impl (#367) (8 weeks ago) <Wodann>
 * 3158ce9 - feat: implement Debug for DatabaseComponentError if supported (#363) (8 weeks ago) <Wodann>
-* d9727c2 - improvement: add error details to InvalidTransaction::LackOfFundForGasLimit (#364) (8 weeks ago) <Wodann>
-* 6b170b4 - Use gas price in place of effective gas price for initial balance check (#359) (8 weeks ago) <gd>
+* d9727c2 - improvement: add error details to InvalidTransaction::LackOfFundForEnergyLimit (#364) (8 weeks ago) <Wodann>
+* 6b170b4 - Use energy price in place of effective energy price for initial balance check (#359) (8 weeks ago) <gd>
 * 5d6ecd0 - improvement: implement BlockHash for Arc<BlockHashRef> (#361) (8 weeks ago) <Wodann>
 * ae9baba - improvement: implement State for Arc<StateRef> (#360) (8 weeks ago) <Wodann>
 * 2e4e800 - chore(deps): bump serde_json from 1.0.91 to 1.0.92 (#357) (8 weeks ago) <dependabot[bot]>
 * 1fca102 - chore(deps): bump proptest from 1.0.0 to 1.1.0 (#358) (8 weeks ago) <dependabot[bot]>
-* 9b663bb - feat: Different OutOfGas Error types (#354) (9 weeks ago) <Chirag Baghasingh>
+* 9b663bb - feat: Different OutOfEnergy Error types (#354) (9 weeks ago) <Chirag Baghasingh>
 * 10187ed - data change (9 weeks ago) <rakita>
 
 # v3.0.0
@@ -482,7 +482,7 @@ Github Changelog:
 * 0194b37 - (t) fix bug introduced in last commit (13 hours ago) <rakita>
 * 7b00f32 - Cleanup imports (#348) (14 hours ago) <rakita>
 * c14d7ea - fix: enable the examples to run with the current revm (#347) (16 hours ago) <flyq>
-* 329fd94 - Wrap all calls to interpreter.gas.erase_cost with checks if USE_GAS is enabled (#346) (2 days ago) <christn>
+* 329fd94 - Wrap all calls to interpreter.energy.erase_cost with checks if USE_ENERGY is enabled (#346) (2 days ago) <christn>
 * 72355f4 - improvement: add logs & return value to revert (#343) (3 days ago) <Wodann>
 * 142a1c9 - expose hashbrown::HashMap in primitives (#345) (3 days ago) <Andy Thomson>
 * ba393d7 - fix: disable balance check (#342) (4 days ago) <Wodann>
@@ -503,7 +503,7 @@ Github Changelog:
 * fd01083 - feature(revm): Return `bytes` in Create calls (#289) (7 weeks ago) <Nicolas Gotchac>
 * 2fb0933 - docs: Correct typo (#282) (7 weeks ago) <Przemyslaw Rzad>
 * 90fe01e - feat(interpreter): Unify instruction fn signature (#283) (7 weeks ago) <rakita>
-* 54e0333 - bug: Integer overflow while calculating the remaining gas in GasInspector (#287) (8 weeks ago) <rakita>
+* 54e0333 - bug: Integer overflow while calculating the remaining energy in EnergyInspector (#287) (8 weeks ago) <rakita>
 * acdbaac - native bits (#278) (8 weeks ago) <rakita>
 * 69e302b - feat(revm): Add prevrandao field to EnvBlock (#271) (2 months ago) <rakita>
 * d1703cd - Export StorageSlot (#265) (3 months ago) <Francesco Cinà>
@@ -522,7 +522,7 @@ Bump dependency versions.
 date: 16.11.2022
 Very small release. Exposes one field and added prevrandao to remove footgun of forgeting to set difficulty.
 
-* 927d16c - disable gas refunds with env flag (#267) (14 minutes ago) <gd>
+* 927d16c - disable energy refunds with env flag (#267) (14 minutes ago) <gd>
 * 47a8310 - Add prevrandao field to EnvBlock (3 minutes ago) <rakita>
 * 2c45b04 - Export StorageSlot (#265) (23 minutes ago) <Francesco Cinà>
 
@@ -531,22 +531,22 @@ date: 12.11.2022
 
 Small release that contains consensus bug fix. Additionally added few small feature flags needed for hardhat, opcode utility function and removal of web3db block number check. 
 
-* dc3414a - Added OEF spec for tests. Skip HighGasPrice (4 minutes ago) <rakita>
+* dc3414a - Added OEF spec for tests. Skip HighEnergyPrice (4 minutes ago) <rakita>
 * f462f9d - Bugfix: if returndatacopy is len 0 return after initial cost (#259) (4 minutes ago) <gd>
 * ea2f2a2 - fix web3db sanity check (#245) (12 days ago) <Wulder>
-* 9f8cdbd - feat: allow block gas limit to be toggled off (#238) (3 weeks ago) <Wodann>
+* 9f8cdbd - feat: allow block energy limit to be toggled off (#238) (3 weeks ago) <Wodann>
 * efd9afc - feat: allow eip3607 to be toggled off (#237) (3 weeks ago) <Wodann>
-* 88c72a7 - fix: return out of gas code for precompiled contracts (#234) (3 weeks ago) <Wodann>
+* 88c72a7 - fix: return out of energy code for precompiled contracts (#234) (3 weeks ago) <Wodann>
 * 30462a3 - Fix: typos (#232) (3 weeks ago) <omahs>
 * 9f513c1 - Borrow self and add derive traits for OpCode (#231) (4 weeks ago) <Franfran>
 
 # v2.1.0
 date: 25.09.2022
 
-GasInspector added by Alexey Shekhirin and some helper functions.
+EnergyInspector added by Alexey Shekhirin and some helper functions.
 Changes:
 
-* ca14d61 - gas inspector (#222) (7 days ago) <Alexey Shekhirin>
+* ca14d61 - energy inspector (#222) (7 days ago) <Alexey Shekhirin>
 * 1e25c99 - chore: expose original value on storageslot (#216) (13 days ago) <Matthias Seitz>
 * aa39d64 - feat: add Memory::shrink_to_fit (#215) (13 days ago) <Matthias Seitz
 
@@ -557,7 +557,7 @@ Release with `Database` interface changed, execution result, consensus bug fixes
 
 Main changes:
 * Add support for old forks. (#191) (9 days ago)
-* revm/evm: Return `ExecutionResult`, which includes `gas_refunded` (#169) (4 weeks ago) <Nicolas Gotchac>
+* revm/evm: Return `ExecutionResult`, which includes `energy_refunded` (#169) (4 weeks ago) <Nicolas Gotchac>
 * JournaledState (#175)
     * Optimize handling of precompiles. Initialization and account loading.
     * Fixes SELFDESTRUCT bug.
@@ -570,11 +570,11 @@ Main changes:
 * Bump dependencies version
 * current_opcode fn and rename program_counter to instruction_pointer (#211)
 * Cfg choose create analysis, option on bytecode size limit (#210)
-* Cleanup remove U256 and use u64 for gas calculation (#213)
+* Cleanup remove U256 and use u64 for energy calculation (#213)
 
 Consensus bugs:
 * SELFDESTRUCT was not handled correctly. It would remove account/storage but it should just mark it for removal. This bug was here from earlier version of revm. (#175)
-* fix: set gas_block to empty bytecode (#172). Introduced in v1.8.0 with bytecode format.
+* fix: set energy_block to empty bytecode (#172). Introduced in v1.8.0 with bytecode format.
 
 # v1.9.0
 date: 09.08.2022
@@ -612,9 +612,9 @@ Most changes are relayed to CacheDB and how it saved accounts.
 # v1.5.0
 date: 09.06.2022
 
-Consensus error related to gas block optimization and `sstore` min stipend. Solution is to make `sstore` instruction as `gas_block_end` as to not spend future instruction gas when checking min stipend condition introduced in EIP-2200.
+Consensus error related to energy block optimization and `sstore` min stipend. Solution is to make `sstore` instruction as `energy_block_end` as to not spend future instruction energy when checking min stipend condition introduced in EIP-2200.
 
-* Consensus error with gas block for SSTORE stipend check (#124)
+* Consensus error with energy block for SSTORE stipend check (#124)
 * enable EIP2200 in Istanbul (#125)
 
 # v1.4.1
@@ -659,11 +659,11 @@ Changes:
 # v1.1.0
 date: 14.1.2022
 
-There is bug introduced in last release with gas blcok optimization, it will crash revm if anywhere in contract is unknown OpCode. And now returning log after execution (ups) included them in eth/tests verification.
+There is bug introduced in last release with energy blcok optimization, it will crash revm if anywhere in contract is unknown OpCode. And now returning log after execution (ups) included them in eth/tests verification.
 
 Changes:
 * Bug fix for unknown OpCode
-* Omit edgecase high nonce test. tracer gas fix 
+* Omit edgecase high nonce test. tracer energy fix 
 * Some internal cleanup
 
 # v1.0.0
@@ -673,7 +673,7 @@ It feel's like that the lib is in the state that is okay to promote it to the v1
 
 Changes: 
 *  web3 db
-*  precalculated gas blocks. Optimization
+*  precalculated energy blocks. Optimization
 *  PC opcode as pointer. Optimization
 *  U256 div_rem optimization
 *  Inspector refactored and it is now closer to Host interface.
@@ -684,19 +684,19 @@ Optimization thread: https://github.com/bluealloy/revm/issues/7
 # v0.5.0
 date: 17.11.2021
 
-A lot of optimization on machine(Interpreter) part, it is now at least 3x faster. On interface side, Error enum was renamed to Return and it is simplified. Additionally if needed gas measuring can be removed with rust feature.
+A lot of optimization on machine(Interpreter) part, it is now at least 3x faster. On interface side, Error enum was renamed to Return and it is simplified. Additionally if needed energy measuring can be removed with rust feature.
 
 Changes: 
 * push instruction optimized.
 * mload/mstore and memory optimized
-* Gas calculation optimized
+* Energy calculation optimized
 * optimize i256
 * switch stacks from H256 with U256
 * Error's refactor to Return
 * clippy/warnings/fmt cleanup
 * Bump auto_impl to v0.5
 * opcode renaming
-* Gas measurment can be removed with rust features.
+* Energy measurment can be removed with rust features.
 
 # v0.4.1
 date: 02.11.2021

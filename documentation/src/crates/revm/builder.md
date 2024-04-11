@@ -100,7 +100,7 @@ The next example changes the spec id and environment of an already built evm.
   let output1 = evm.transact();
 
   // Example of modifying the tx env.
-  let mut evm = evm.modify().modify_tx_env(|env| env.gas_price = 0.into()).build();
+  let mut evm = evm.modify().modify_tx_env(|env| env.energy_price = 0.into()).build();
 
   // Execute the evm with modified tx env.
   let output2 = evm.transact();
@@ -125,7 +125,7 @@ impl ContextStatefulPrecompile<EvmContext<EmptyDB>, ()> for CustomPrecompile {
     fn call(
         &self,
         _input: &Bytes,
-        _gas_price: u64,
+        _energy_price: u64,
         _context: &mut EvmContext<EmptyDB>,
         _extctx: &mut (),
     ) -> PrecompileResult {

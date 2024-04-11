@@ -52,7 +52,7 @@ pub struct Test {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct TxPartIndices {
     pub data: usize,
-    pub gas: usize,
+    pub energy: usize,
     pub value: usize,
 }
 
@@ -71,7 +71,7 @@ pub struct AccountInfo {
 pub struct Env {
     pub current_coinbase: Address,
     pub current_difficulty: U256,
-    pub current_gas_limit: U256,
+    pub current_energy_limit: U256,
     pub current_number: U256,
     pub current_timestamp: U256,
     pub current_base_fee: Option<U256>,
@@ -81,17 +81,17 @@ pub struct Env {
     pub current_beacon_root: Option<B256>,
     pub current_withdrawals_root: Option<B256>,
 
-    pub parent_blob_gas_used: Option<U256>,
-    pub parent_excess_blob_gas: Option<U256>,
-    pub current_excess_blob_gas: Option<U256>,
+    pub parent_blob_energy_used: Option<U256>,
+    pub parent_excess_blob_energy: Option<U256>,
+    pub current_excess_blob_energy: Option<U256>,
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct TransactionParts {
     pub data: Vec<Bytes>,
-    pub gas_limit: Vec<U256>,
-    pub gas_price: Option<U256>,
+    pub energy_limit: Vec<U256>,
+    pub energy_price: Option<U256>,
     pub nonce: U256,
     pub secret_key: B256,
     /// if sender is not present we need to derive it from secret key.
@@ -100,15 +100,15 @@ pub struct TransactionParts {
     #[serde(deserialize_with = "deserialize_maybe_empty")]
     pub to: Option<Address>,
     pub value: Vec<U256>,
-    pub max_fee_per_gas: Option<U256>,
-    pub max_priority_fee_per_gas: Option<U256>,
+    pub max_fee_per_energy: Option<U256>,
+    pub max_priority_fee_per_energy: Option<U256>,
 
     #[serde(default)]
     pub access_lists: Vec<Option<AccessList>>,
 
     #[serde(default)]
     pub blob_versioned_hashes: Vec<B256>,
-    pub max_fee_per_blob_gas: Option<U256>,
+    pub max_fee_per_blob_energy: Option<U256>,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     pub fn deserialize_minimal_transaction_parts() -> Result<(), Error> {
-        let json = r#"{"data":[],"gasLimit":[],"nonce":"0x0","secretKey":"0x0000000000000000000000000000000000000000000000000000000000000000","to":"","value":[]}"#;
+        let json = r#"{"data":[],"energyLimit":[],"nonce":"0x0","secretKey":"0x0000000000000000000000000000000000000000000000000000000000000000","to":"","value":[]}"#;
 
         let _: TransactionParts = serde_json::from_str(json)?;
         Ok(())

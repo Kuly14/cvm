@@ -84,14 +84,14 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
         self.handler.cfg.spec_id
     }
 
-    /// Pre verify transaction by checking Environment, initial gas spend and if caller
-    /// has enough balance to pay for the gas.
+    /// Pre verify transaction by checking Environment, initial energy spend and if caller
+    /// has enough balance to pay for the energy.
     #[inline]
     pub fn preverify_transaction(&mut self) -> Result<(), EVMError<DB::Error>> {
         self.handler.validation().env(&self.context.evm.env)?;
         self.handler
             .validation()
-            .initial_tx_gas(&self.context.evm.env)?;
+            .initial_tx_energy(&self.context.evm.env)?;
         self.handler
             .validation()
             .tx_against_state(&mut self.context)?;
@@ -103,11 +103,11 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
     /// This function will not validate the transaction.
     #[inline]
     pub fn transact_preverified(&mut self) -> EVMResult<DB::Error> {
-        let initial_gas_spend = self
+        let initial_energy_spend = self
             .handler
             .validation()
-            .initial_tx_gas(&self.context.evm.env)?;
-        let output = self.transact_preverified_inner(initial_gas_spend);
+            .initial_tx_energy(&self.context.evm.env)?;
+        let output = self.transact_preverified_inner(initial_energy_spend);
         self.handler.post_execution().end(&mut self.context, output)
     }
 
@@ -171,15 +171,15 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
     #[inline]
     pub fn transact(&mut self) -> EVMResult<DB::Error> {
         self.handler.validation().env(&self.context.evm.env)?;
-        let initial_gas_spend = self
+        let initial_energy_spend = self
             .handler
             .validation()
-            .initial_tx_gas(&self.context.evm.env)?;
+            .initial_tx_energy(&self.context.evm.env)?;
         self.handler
             .validation()
             .tx_against_state(&mut self.context)?;
 
-        let output = self.transact_preverified_inner(initial_gas_spend);
+        let output = self.transact_preverified_inner(initial_energy_spend);
         self.handler.post_execution().end(&mut self.context, output)
     }
 
@@ -329,7 +329,7 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
     }
 
     /// Transact pre-verified transaction.
-    fn transact_preverified_inner(&mut self, initial_gas_spend: u64) -> EVMResult<DB::Error> {
+    fn transact_preverified_inner(&mut self, initial_energy_spend: u64) -> EVMResult<DB::Error> {
         let ctx = &mut self.context;
         let pre_exec = self.handler.pre_execution();
 
@@ -343,18 +343,18 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
         // deduce caller balance with its limit.
         pre_exec.deduct_caller(ctx)?;
 
-        let gas_limit = ctx.evm.env.tx.gas_limit - initial_gas_spend;
+        let energy_limit = ctx.evm.env.tx.energy_limit - initial_energy_spend;
 
         let exec = self.handler.execution();
         // call inner handling of call/create
         let first_frame_or_result = match ctx.evm.env.tx.transact_to {
             TransactTo::Call(_) => exec.call(
                 ctx,
-                CallInputs::new_boxed(&ctx.evm.env.tx, gas_limit).unwrap(),
+                CallInputs::new_boxed(&ctx.evm.env.tx, energy_limit).unwrap(),
             )?,
             TransactTo::Create(_) => exec.create(
                 ctx,
-                CreateInputs::new_boxed(&ctx.evm.env.tx, gas_limit, ctx.evm.env.cfg.network_id)
+                CreateInputs::new_boxed(&ctx.evm.env.tx, energy_limit, ctx.evm.env.cfg.network_id)
                     .unwrap(),
             )?,
         };
@@ -374,9 +374,9 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
 
         let post_exec = self.handler.post_execution();
         // Reimburse the caller
-        post_exec.reimburse_caller(ctx, result.gas())?;
+        post_exec.reimburse_caller(ctx, result.energy())?;
         // Reward beneficiary
-        post_exec.reward_beneficiary(ctx, result.gas())?;
+        post_exec.reward_beneficiary(ctx, result.energy())?;
         // Returns output of transaction.
         post_exec.output(ctx, result)
     }

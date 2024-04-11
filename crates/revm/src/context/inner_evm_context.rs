@@ -1,8 +1,8 @@
 use crate::{
     db::Database,
     interpreter::{
-        analysis::to_analysed, gas, return_ok, Contract, CreateInputs, Gas, InstructionResult,
-        Interpreter, InterpreterResult, MAX_CODE_SIZE,
+        analysis::to_analysed, energy, return_ok, Contract, CreateInputs, Energy,
+        InstructionResult, Interpreter, InterpreterResult, MAX_CODE_SIZE,
     },
     journaled_state::JournaledState,
     primitives::{
@@ -226,13 +226,13 @@ impl<DB: Database> InnerEvmContext<DB> {
         inputs: &CreateInputs,
     ) -> Result<FrameOrResult, EVMError<DB::Error>> {
         // Prepare crate.
-        let gas = Gas::new(inputs.gas_limit);
+        let energy = Energy::new(inputs.energy_limit);
 
         let return_error = |e| {
             Ok(FrameOrResult::new_create_result(
                 InterpreterResult {
                     result: e,
-                    gas,
+                    energy,
                     output: Bytes::new(),
                 },
                 None,
@@ -307,7 +307,7 @@ impl<DB: Database> InnerEvmContext<DB> {
         Ok(FrameOrResult::new_create_frame(
             created_address,
             checkpoint,
-            Interpreter::new(contract, gas.limit(), false),
+            Interpreter::new(contract, energy.limit(), false),
         ))
     }
 
@@ -340,7 +340,7 @@ impl<DB: Database> InnerEvmContext<DB> {
             return;
         }
         // Host error if present on execution
-        // if ok, check contract creation limit and calculate gas deduction on output len.
+        // if ok, check contract creation limit and calculate energy deduction on output len.
         //
         // EIP-3541: Reject new contract code starting with the 0xEF byte
         if SPEC::enabled(LONDON)
@@ -366,21 +366,21 @@ impl<DB: Database> InnerEvmContext<DB> {
             interpreter_result.result = InstructionResult::CreateContractSizeLimit;
             return;
         }
-        let gas_for_code = interpreter_result.output.len() as u64 * gas::CODEDEPOSIT;
-        if !interpreter_result.gas.record_cost(gas_for_code) {
-            // record code deposit gas cost and check if we are out of gas.
-            // EIP-2 point 3: If contract creation does not have enough gas to pay for the
-            // final gas fee for adding the contract code to the state, the contract
-            //  creation fails (i.e. goes out-of-gas) rather than leaving an empty contract.
+        let energy_for_code = interpreter_result.output.len() as u64 * energy::CODEDEPOSIT;
+        if !interpreter_result.energy.record_cost(energy_for_code) {
+            // record code deposit energy cost and check if we are out of energy.
+            // EIP-2 point 3: If contract creation does not have enough energy to pay for the
+            // final energy fee for adding the contract code to the state, the contract
+            //  creation fails (i.e. goes out-of-energy) rather than leaving an empty contract.
             if SPEC::enabled(HOMESTEAD) {
                 self.journaled_state.checkpoint_revert(journal_checkpoint);
-                interpreter_result.result = InstructionResult::OutOfGas;
+                interpreter_result.result = InstructionResult::OutOfEnergy;
                 return;
             } else {
                 interpreter_result.output = Bytes::new();
             }
         }
-        // if we have enough gas we can commit changes.
+        // if we have enough energy we can commit changes.
         self.journaled_state.checkpoint_commit();
 
         // Do analysis of bytecode straight away.

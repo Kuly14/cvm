@@ -7,7 +7,7 @@ pub const POINT_EVALUATION: PrecompileWithAddress =
     PrecompileWithAddress(ADDRESS, Precompile::Env(run));
 
 pub const ADDRESS: Address = crate::u64_to_address(0x0A);
-pub const GAS_COST: u64 = 50_000;
+pub const ENERGY_COST: u64 = 50_000;
 pub const VERSIONED_HASH_VERSION_KZG: u8 = 0x01;
 
 /// `U256(FIELD_ELEMENTS_PER_BLOB).to_be_bytes() ++ BLS_MODULUS.to_bytes32()`
@@ -24,9 +24,9 @@ pub const RETURN_VALUE: &[u8; 64] = &hex!(
 /// | versioned_hash |  z  |  y  | commitment | proof |
 /// |     32         | 32  | 32  |     48     |   48  |
 /// with z and y being padded 32 byte big endian values
-pub fn run(input: &Bytes, gas_limit: u64, env: &Env) -> PrecompileResult {
-    if gas_limit < GAS_COST {
-        return Err(Error::OutOfGas);
+pub fn run(input: &Bytes, energy_limit: u64, env: &Env) -> PrecompileResult {
+    if energy_limit < ENERGY_COST {
+        return Err(Error::OutOfEnergy);
     }
 
     // Verify input length.
@@ -51,7 +51,7 @@ pub fn run(input: &Bytes, gas_limit: u64, env: &Env) -> PrecompileResult {
     }
 
     // Return FIELD_ELEMENTS_PER_BLOB and BLS_MODULUS as padded 32 byte big endian values
-    Ok((GAS_COST, RETURN_VALUE.into()))
+    Ok((ENERGY_COST, RETURN_VALUE.into()))
 }
 
 /// `VERSIONED_HASH_VERSION_KZG ++ sha256(commitment)[1..]`
@@ -111,10 +111,10 @@ mod tests {
         let input = [versioned_hash, z, y, commitment, proof].concat();
 
         let expected_output = hex!("000000000000000000000000000000000000000000000000000000000000100073eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001");
-        let gas = 50000;
+        let energy = 50000;
         let env = Env::default();
-        let (actual_gas, actual_output) = run(&input.into(), gas, &env).unwrap();
-        assert_eq!(actual_gas, gas);
+        let (actual_energy, actual_output) = run(&input.into(), energy, &env).unwrap();
+        assert_eq!(actual_energy, energy);
         assert_eq!(actual_output[..], expected_output);
     }
 }

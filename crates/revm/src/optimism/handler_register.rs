@@ -5,7 +5,7 @@ use crate::{
         mainnet::{self, deduct_caller_inner},
         register::EvmHandler,
     },
-    interpreter::{return_ok, return_revert, Gas, InstructionResult},
+    interpreter::{return_ok, return_revert, Energy, InstructionResult},
     optimism,
     primitives::{
         db::Database, spec_to_generic, Account, EVMError, Env, ExecutionResult, HaltReason,
@@ -74,66 +74,67 @@ pub fn last_frame_return<SPEC: Spec, EXT, DB: Database>(
     let env = context.evm.inner.env();
     let is_deposit = env.tx.optimism.source_hash.is_some();
     let tx_system = env.tx.optimism.is_system_transaction;
-    let tx_gas_limit = env.tx.gas_limit;
+    let tx_energy_limit = env.tx.energy_limit;
     let is_regolith = SPEC::enabled(REGOLITH);
 
     let instruction_result = frame_result.interpreter_result().result;
-    let gas = frame_result.gas_mut();
-    let remaining = gas.remaining();
-    let refunded = gas.refunded();
-    // Spend the gas limit. Gas is reimbursed when the tx returns successfully.
-    *gas = Gas::new(tx_gas_limit);
-    gas.record_cost(tx_gas_limit);
+    let energy = frame_result.energy_mut();
+    let remaining = energy.remaining();
+    let refunded = energy.refunded();
+    // Spend the energy limit. Energy is reimbursed when the tx returns successfully.
+    *energy = Energy::new(tx_energy_limit);
+    energy.record_cost(tx_energy_limit);
 
     match instruction_result {
         return_ok!() => {
-            // On Optimism, deposit transactions report gas usage uniquely to other
+            // On Optimism, deposit transactions report energy usage uniquely to other
             // transactions due to them being pre-paid on L1.
             //
             // Hardfork Behavior:
             // - Bedrock (success path):
-            //   - Deposit transactions (non-system) report their gas limit as the usage.
+            //   - Deposit transactions (non-system) report their energy limit as the usage.
             //     No refunds.
-            //   - Deposit transactions (system) report 0 gas used. No refunds.
-            //   - Regular transactions report gas usage as normal.
+            //   - Deposit transactions (system) report 0 energy used. No refunds.
+            //   - Regular transactions report energy usage as normal.
             // - Regolith (success path):
-            //   - Deposit transactions (all) report their gas used as normal. Refunds
+            //   - Deposit transactions (all) report their energy used as normal. Refunds
             //     enabled.
-            //   - Regular transactions report their gas used as normal.
+            //   - Regular transactions report their energy used as normal.
             if !is_deposit || is_regolith {
                 // For regular transactions prior to Regolith and all transactions after
-                // Regolith, gas is reported as normal.
-                gas.erase_cost(remaining);
-                gas.record_refund(refunded);
+                // Regolith, energy is reported as normal.
+                energy.erase_cost(remaining);
+                energy.record_refund(refunded);
             } else if is_deposit && tx_system.unwrap_or(false) {
                 // System transactions were a special type of deposit transaction in
-                // the Bedrock hardfork that did not incur any gas costs.
-                gas.erase_cost(tx_gas_limit);
+                // the Bedrock hardfork that did not incur any energy costs.
+                energy.erase_cost(tx_energy_limit);
             }
         }
         return_revert!() => {
-            // On Optimism, deposit transactions report gas usage uniquely to other
+            // On Optimism, deposit transactions report energy usage uniquely to other
             // transactions due to them being pre-paid on L1.
             //
             // Hardfork Behavior:
             // - Bedrock (revert path):
-            //   - Deposit transactions (all) report the gas limit as the amount of gas
+            //   - Deposit transactions (all) report the energy limit as the amount of energy
             //     used on failure. No refunds.
-            //   - Regular transactions receive a refund on remaining gas as normal.
+            //   - Regular transactions receive a refund on remaining energy as normal.
             // - Regolith (revert path):
-            //   - Deposit transactions (all) report the actual gas used as the amount of
-            //     gas used on failure. Refunds on remaining gas enabled.
-            //   - Regular transactions receive a refund on remaining gas as normal.
+            //   - Deposit transactions (all) report the actual energy used as the amount of
+            //     energy used on failure. Refunds on remaining energy enabled.
+            //   - Regular transactions receive a refund on remaining energy as normal.
             if !is_deposit || is_regolith {
-                gas.erase_cost(remaining);
+                energy.erase_cost(remaining);
             }
         }
         _ => {}
     }
-    // Prior to Regolith, deposit transactions did not receive gas refunds.
-    let is_gas_refund_disabled = env.cfg.is_gas_refund_disabled() || (is_deposit && !is_regolith);
-    if !is_gas_refund_disabled {
-        gas.set_final_refund(SPEC::SPEC_ID.is_enabled_in(SpecId::LONDON));
+    // Prior to Regolith, deposit transactions did not receive energy refunds.
+    let is_energy_refund_disabled =
+        env.cfg.is_energy_refund_disabled() || (is_deposit && !is_regolith);
+    if !is_energy_refund_disabled {
+        energy.set_final_refund(SPEC::SPEC_ID.is_enabled_in(SpecId::LONDON));
     }
     Ok(())
 }
@@ -210,17 +211,17 @@ pub fn deduct_caller<SPEC: Spec, EXT, DB: Database>(
     Ok(())
 }
 
-/// Reward beneficiary with gas fee.
+/// Reward beneficiary with energy fee.
 #[inline]
 pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
     context: &mut Context<EXT, DB>,
-    gas: &Gas,
+    energy: &Energy,
 ) -> Result<(), EVMError<DB::Error>> {
     let is_deposit = context.evm.inner.env.tx.optimism.source_hash.is_some();
 
     // transfer fee to coinbase/beneficiary.
     if !is_deposit {
-        mainnet::reward_beneficiary::<SPEC, EXT, DB>(context, gas)?;
+        mainnet::reward_beneficiary::<SPEC, EXT, DB>(context, energy)?;
     }
 
     if !is_deposit {
@@ -272,7 +273,7 @@ pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
             .env
             .block
             .basefee
-            .mul(U256::from(gas.spent() - gas.refunded() as u64));
+            .mul(U256::from(energy.spent() - energy.refunded() as u64));
     }
     Ok(())
 }
@@ -311,7 +312,7 @@ pub fn end<SPEC: Spec, EXT, DB: Database>(
         {
             // If the transaction is a deposit transaction and it failed
             // for any reason, the caller nonce must be bumped, and the
-            // gas reported must be altered depending on the Hardfork. This is
+            // energy reported must be altered depending on the Hardfork. This is
             // also returned as a special Halt variant so that consumers can more
             // easily distinguish between a failed deposit and a failed
             // normal transaction.
@@ -337,8 +338,8 @@ pub fn end<SPEC: Spec, EXT, DB: Database>(
             };
             let state = HashMap::from([(caller, account)]);
 
-            // The gas used of a failed deposit post-regolith is the gas
-            // limit of the transaction. pre-regolith, it is the gas limit
+            // The energy used of a failed deposit post-regolith is the energy
+            // limit of the transaction. pre-regolith, it is the energy limit
             // of the transaction for non system transactions and 0 for system
             // transactions.
             let is_system_tx = context
@@ -348,8 +349,8 @@ pub fn end<SPEC: Spec, EXT, DB: Database>(
                 .optimism
                 .is_system_transaction
                 .unwrap_or(false);
-            let gas_used = if SPEC::enabled(REGOLITH) || !is_system_tx {
-                context.evm.inner.env().tx.gas_limit
+            let energy_used = if SPEC::enabled(REGOLITH) || !is_system_tx {
+                context.evm.inner.env().tx.energy_limit
             } else {
                 0
             };
@@ -357,7 +358,7 @@ pub fn end<SPEC: Spec, EXT, DB: Database>(
             Ok(ResultAndState {
                 result: ExecutionResult::Halt {
                     reason: HaltReason::FailedDeposit,
-                    gas_used,
+                    energy_used,
                 },
                 state,
             })
@@ -385,79 +386,84 @@ mod tests {
     fn call_last_frame_return<SPEC: Spec>(
         env: Env,
         instruction_result: InstructionResult,
-        gas: Gas,
-    ) -> Gas {
+        energy: Energy,
+    ) -> Energy {
         let mut ctx = Context::new_empty();
         ctx.evm.inner.env = Box::new(env);
         let mut first_frame = FrameResult::Call(CallOutcome::new(
             InterpreterResult {
                 result: instruction_result,
                 output: Bytes::new(),
-                gas,
+                energy,
             },
             0..0,
         ));
         last_frame_return::<SPEC, _, _>(&mut ctx, &mut first_frame).unwrap();
-        *first_frame.gas()
+        *first_frame.energy()
     }
 
     #[test]
-    fn test_revert_gas() {
+    fn test_revert_energy() {
         let mut env = Env::default();
-        env.tx.gas_limit = 100;
+        env.tx.energy_limit = 100;
         env.tx.optimism.source_hash = None;
 
-        let gas =
-            call_last_frame_return::<BedrockSpec>(env, InstructionResult::Revert, Gas::new(90));
-        assert_eq!(gas.remaining(), 90);
-        assert_eq!(gas.spent(), 10);
-        assert_eq!(gas.refunded(), 0);
+        let energy =
+            call_last_frame_return::<BedrockSpec>(env, InstructionResult::Revert, Energy::new(90));
+        assert_eq!(energy.remaining(), 90);
+        assert_eq!(energy.spent(), 10);
+        assert_eq!(energy.refunded(), 0);
     }
 
     #[test]
-    fn test_consume_gas() {
+    fn test_consume_energy() {
         let mut env = Env::default();
-        env.tx.gas_limit = 100;
+        env.tx.energy_limit = 100;
         env.tx.optimism.source_hash = Some(B256::ZERO);
 
-        let gas =
-            call_last_frame_return::<RegolithSpec>(env, InstructionResult::Stop, Gas::new(90));
-        assert_eq!(gas.remaining(), 90);
-        assert_eq!(gas.spent(), 10);
-        assert_eq!(gas.refunded(), 0);
+        let energy =
+            call_last_frame_return::<RegolithSpec>(env, InstructionResult::Stop, Energy::new(90));
+        assert_eq!(energy.remaining(), 90);
+        assert_eq!(energy.spent(), 10);
+        assert_eq!(energy.refunded(), 0);
     }
 
     #[test]
-    fn test_consume_gas_with_refund() {
+    fn test_consume_energy_with_refund() {
         let mut env = Env::default();
-        env.tx.gas_limit = 100;
+        env.tx.energy_limit = 100;
         env.tx.optimism.source_hash = Some(B256::ZERO);
 
-        let mut ret_gas = Gas::new(90);
-        ret_gas.record_refund(20);
+        let mut ret_energy = Energy::new(90);
+        ret_energy.record_refund(20);
 
-        let gas =
-            call_last_frame_return::<RegolithSpec>(env.clone(), InstructionResult::Stop, ret_gas);
-        assert_eq!(gas.remaining(), 90);
-        assert_eq!(gas.spent(), 10);
-        assert_eq!(gas.refunded(), 2); // min(20, 10/5)
+        let energy = call_last_frame_return::<RegolithSpec>(
+            env.clone(),
+            InstructionResult::Stop,
+            ret_energy,
+        );
+        assert_eq!(energy.remaining(), 90);
+        assert_eq!(energy.spent(), 10);
+        assert_eq!(energy.refunded(), 2); // min(20, 10/5)
 
-        let gas = call_last_frame_return::<RegolithSpec>(env, InstructionResult::Revert, ret_gas);
-        assert_eq!(gas.remaining(), 90);
-        assert_eq!(gas.spent(), 10);
-        assert_eq!(gas.refunded(), 0);
+        let energy =
+            call_last_frame_return::<RegolithSpec>(env, InstructionResult::Revert, ret_energy);
+        assert_eq!(energy.remaining(), 90);
+        assert_eq!(energy.spent(), 10);
+        assert_eq!(energy.refunded(), 0);
     }
 
     #[test]
-    fn test_consume_gas_sys_deposit_tx() {
+    fn test_consume_energy_sys_deposit_tx() {
         let mut env = Env::default();
-        env.tx.gas_limit = 100;
+        env.tx.energy_limit = 100;
         env.tx.optimism.source_hash = Some(B256::ZERO);
 
-        let gas = call_last_frame_return::<BedrockSpec>(env, InstructionResult::Stop, Gas::new(90));
-        assert_eq!(gas.remaining(), 0);
-        assert_eq!(gas.spent(), 100);
-        assert_eq!(gas.refunded(), 0);
+        let energy =
+            call_last_frame_return::<BedrockSpec>(env, InstructionResult::Stop, Energy::new(90));
+        assert_eq!(energy.remaining(), 0);
+        assert_eq!(energy.spent(), 100);
+        assert_eq!(energy.refunded(), 0);
     }
 
     #[test]
@@ -518,7 +524,7 @@ mod tests {
         // added mint value is 10.
         context.evm.inner.env.tx.optimism.mint = Some(10);
         // Putting source_hash to some makes it a deposit transaction.
-        // so enveloped_tx gas cost is ignored.
+        // so enveloped_tx energy cost is ignored.
         context.evm.inner.env.tx.optimism.source_hash = Some(B256::ZERO);
 
         deduct_caller::<RegolithSpec, (), _>(&mut context).unwrap();

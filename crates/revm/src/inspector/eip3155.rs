@@ -1,5 +1,5 @@
 use crate::{
-    inspectors::GasInspector,
+    inspectors::EnergyInspector,
     interpreter::{
         opcode, CallInputs, CallOutcome, CreateInputs, CreateOutcome, Interpreter,
         InterpreterResult,
@@ -14,7 +14,7 @@ use std::vec::Vec;
 /// [EIP-3155](https://eips.ethereum.org/EIPS/eip-3155) tracer [Inspector].
 pub struct TracerEip3155 {
     output: Box<dyn Write>,
-    gas_inspector: GasInspector,
+    energy_inspector: EnergyInspector,
 
     /// Print summary of the execution.
     print_summary: bool,
@@ -22,7 +22,7 @@ pub struct TracerEip3155 {
     stack: Vec<U256>,
     pc: usize,
     opcode: u8,
-    gas: u64,
+    energy: u64,
     refunded: i64,
     mem_size: usize,
     skip: bool,
@@ -40,17 +40,17 @@ struct Output {
     pc: u64,
     /// OpCode
     op: u8,
-    /// Gas left before executing this operation
-    gas: String,
-    /// Gas cost of this operation
-    gas_cost: String,
+    /// Energy left before executing this operation
+    energy: String,
+    /// Energy cost of this operation
+    energy_cost: String,
     /// Array of all values on the stack
     stack: Vec<String>,
     /// Depth of the call stack
     depth: u64,
     /// Data returned by the function call
     return_data: String,
-    /// Amount of **global** gas refunded
+    /// Amount of **global** energy refunded
     refund: String,
     /// Size of memory array
     mem_size: String,
@@ -82,8 +82,8 @@ struct Summary {
     state_root: String,
     /// Return values of the function
     output: String,
-    /// All gas used by the transaction
-    gas_used: String,
+    /// All energy used by the transaction
+    energy_used: String,
     /// Bool whether transaction was executed successfully
     pass: bool,
 
@@ -106,21 +106,21 @@ impl TracerEip3155 {
     /// This makes the inspector ready to be used again.
     pub fn clear(&mut self) {
         let Self {
-            gas_inspector,
+            energy_inspector,
             stack,
             pc,
             opcode,
-            gas,
+            energy,
             refunded,
             mem_size,
             skip,
             ..
         } = self;
-        *gas_inspector = GasInspector::default();
+        *energy_inspector = EnergyInspector::default();
         stack.clear();
         *pc = 0;
         *opcode = 0;
-        *gas = 0;
+        *energy = 0;
         *refunded = 0;
         *mem_size = 0;
         *skip = false;
@@ -131,14 +131,14 @@ impl TracerEip3155 {
     pub fn new(output: Box<dyn Write>) -> Self {
         Self {
             output,
-            gas_inspector: GasInspector::default(),
+            energy_inspector: EnergyInspector::default(),
             print_summary: true,
             include_memory: false,
             stack: Default::default(),
             memory: Default::default(),
             pc: 0,
             opcode: 0,
-            gas: 0,
+            energy: 0,
             refunded: 0,
             mem_size: 0,
             skip: false,
@@ -173,8 +173,8 @@ impl TracerEip3155 {
             let value = Summary {
                 state_root: B256::ZERO.to_string(),
                 output: result.output.to_string(),
-                gas_used: hex_number(
-                    context.inner.env().tx.gas_limit - self.gas_inspector.gas_remaining(),
+                energy_used: hex_number(
+                    context.inner.env().tx.energy_limit - self.energy_inspector.energy_remaining(),
                 ),
                 pass: result.is_ok(),
 
@@ -188,11 +188,11 @@ impl TracerEip3155 {
 
 impl<DB: Database> Inspector<DB> for TracerEip3155 {
     fn initialize_interp(&mut self, interp: &mut Interpreter, context: &mut EvmContext<DB>) {
-        self.gas_inspector.initialize_interp(interp, context);
+        self.energy_inspector.initialize_interp(interp, context);
     }
 
     fn step(&mut self, interp: &mut Interpreter, context: &mut EvmContext<DB>) {
-        self.gas_inspector.step(interp, context);
+        self.energy_inspector.step(interp, context);
         self.stack = interp.stack.data().clone();
         self.memory = if self.include_memory {
             Some(hex::encode_prefixed(interp.shared_memory.context_memory()))
@@ -202,12 +202,12 @@ impl<DB: Database> Inspector<DB> for TracerEip3155 {
         self.pc = interp.program_counter();
         self.opcode = interp.current_opcode();
         self.mem_size = interp.shared_memory.len();
-        self.gas = interp.gas.remaining();
-        self.refunded = interp.gas.refunded();
+        self.energy = interp.energy.remaining();
+        self.refunded = interp.energy.refunded();
     }
 
     fn step_end(&mut self, interp: &mut Interpreter, context: &mut EvmContext<DB>) {
-        self.gas_inspector.step_end(interp, context);
+        self.energy_inspector.step_end(interp, context);
         if self.skip {
             self.skip = false;
             return;
@@ -216,8 +216,8 @@ impl<DB: Database> Inspector<DB> for TracerEip3155 {
         let value = Output {
             pc: self.pc as u64,
             op: self.opcode,
-            gas: hex_number(self.gas),
-            gas_cost: hex_number(self.gas_inspector.last_gas_cost()),
+            energy: hex_number(self.energy),
+            energy_cost: hex_number(self.energy_inspector.last_energy_cost()),
             stack: self.stack.iter().map(hex_number_u256).collect(),
             depth: context.journaled_state.depth(),
             return_data: "0x".to_string(),
@@ -243,7 +243,7 @@ impl<DB: Database> Inspector<DB> for TracerEip3155 {
         inputs: &CallInputs,
         outcome: CallOutcome,
     ) -> CallOutcome {
-        let outcome = self.gas_inspector.call_end(context, inputs, outcome);
+        let outcome = self.energy_inspector.call_end(context, inputs, outcome);
 
         if context.journaled_state.depth() == 0 {
             self.print_summary(&outcome.result, context);
@@ -260,7 +260,7 @@ impl<DB: Database> Inspector<DB> for TracerEip3155 {
         inputs: &CreateInputs,
         outcome: CreateOutcome,
     ) -> CreateOutcome {
-        let outcome = self.gas_inspector.create_end(context, inputs, outcome);
+        let outcome = self.energy_inspector.create_end(context, inputs, outcome);
 
         if context.journaled_state.depth() == 0 {
             self.print_summary(&outcome.result, context);

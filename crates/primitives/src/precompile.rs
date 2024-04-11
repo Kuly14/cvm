@@ -5,7 +5,7 @@ use std::{boxed::Box, string::String, sync::Arc};
 
 /// A precompile operation result.
 ///
-/// Returns either `Ok((gas_used, return_bytes))` or `Err(error)`.
+/// Returns either `Ok((energy_used, return_bytes))` or `Err(error)`.
 pub type PrecompileResult = Result<(u64, Bytes), PrecompileError>;
 
 pub type StandardPrecompileFn = fn(&Bytes, u64) -> PrecompileResult;
@@ -14,13 +14,13 @@ pub type EnvPrecompileFn = fn(&Bytes, u64, env: &Env) -> PrecompileResult;
 /// Stateful precompile trait. It is used to create
 /// a arc precompile Precompile::Stateful.
 pub trait StatefulPrecompile: Sync + Send {
-    fn call(&self, bytes: &Bytes, gas_price: u64, env: &Env) -> PrecompileResult;
+    fn call(&self, bytes: &Bytes, energy_price: u64, env: &Env) -> PrecompileResult;
 }
 
 /// Mutable stateful precompile trait. It is used to create
 /// a boxed precompile in Precompile::StatefulMut.
 pub trait StatefulPrecompileMut: DynClone + Send + Sync {
-    fn call_mut(&mut self, bytes: &Bytes, gas_price: u64, env: &Env) -> PrecompileResult;
+    fn call_mut(&mut self, bytes: &Bytes, energy_price: u64, env: &Env) -> PrecompileResult;
 }
 
 dyn_clone::clone_trait_object!(StatefulPrecompileMut);
@@ -34,15 +34,15 @@ pub type StatefulPrecompileBox = Box<dyn StatefulPrecompileMut>;
 /// Precompile and its handlers.
 #[derive(Clone)]
 pub enum Precompile {
-    /// Standard simple precompile that takes input and gas limit.
+    /// Standard simple precompile that takes input and energy limit.
     Standard(StandardPrecompileFn),
     /// Similar to Standard but takes reference to environment.
     Env(EnvPrecompileFn),
     /// Stateful precompile that is Arc over [`StatefulPrecompile`] trait.
-    /// It takes a reference to input, gas limit and environment.
+    /// It takes a reference to input, energy limit and environment.
     Stateful(StatefulPrecompileArc),
     /// Mutable stateful precompile that is Box over [`StatefulPrecompileMut`] trait.
-    /// It takes a reference to input, gas limit and environment.
+    /// It takes a reference to input, energy limit and environment.
     StatefulMut(StatefulPrecompileBox),
 }
 
@@ -92,21 +92,21 @@ impl Precompile {
         Self::StatefulMut(Box::new(p))
     }
 
-    /// Call the precompile with the given input and gas limit and return the result.
-    pub fn call(&mut self, bytes: &Bytes, gas_price: u64, env: &Env) -> PrecompileResult {
+    /// Call the precompile with the given input and energy limit and return the result.
+    pub fn call(&mut self, bytes: &Bytes, energy_price: u64, env: &Env) -> PrecompileResult {
         match self {
-            Precompile::Standard(p) => p(bytes, gas_price),
-            Precompile::Env(p) => p(bytes, gas_price, env),
-            Precompile::Stateful(p) => p.call(bytes, gas_price, env),
-            Precompile::StatefulMut(p) => p.call_mut(bytes, gas_price, env),
+            Precompile::Standard(p) => p(bytes, energy_price),
+            Precompile::Env(p) => p(bytes, energy_price, env),
+            Precompile::Stateful(p) => p.call(bytes, energy_price, env),
+            Precompile::StatefulMut(p) => p.call_mut(bytes, energy_price, env),
         }
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum PrecompileError {
-    /// out of gas is the main error. Others are here just for completeness
-    OutOfGas,
+    /// out of energy is the main error. Others are here just for completeness
+    OutOfEnergy,
     // Blake2 errors
     Blake2WrongLength,
     Blake2WrongFinalIndicatorFlag,
@@ -141,7 +141,7 @@ impl std::error::Error for PrecompileError {}
 impl fmt::Display for PrecompileError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            Self::OutOfGas => "out of gas",
+            Self::OutOfEnergy => "out of energy",
             Self::Blake2WrongLength => "wrong input length for blake2",
             Self::Blake2WrongFinalIndicatorFlag => "wrong final indicator flag for blake2",
             Self::ModexpExpOverflow => "modexp exp overflow",
@@ -172,10 +172,10 @@ mod test {
             fn call_mut(
                 &mut self,
                 _bytes: &Bytes,
-                _gas_price: u64,
+                _energy_price: u64,
                 _env: &Env,
             ) -> PrecompileResult {
-                PrecompileResult::Err(PrecompileError::OutOfGas)
+                PrecompileResult::Err(PrecompileError::OutOfEnergy)
             }
         }
 

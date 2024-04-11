@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.1.1](https://github.com/bluealloy/revm/compare/revm-primitives-v3.1.0...revm-primitives-v3.1.1) - 2024-04-02
 
 ### Fixed
-- fix eip3155 summary gas_used bug and add fork name ([#1216](https://github.com/bluealloy/revm/pull/1216))
+- fix eip3155 summary energy_used bug and add fork name ([#1216](https://github.com/bluealloy/revm/pull/1216))
 
 ### Other
 - use uint macro & fix various small things ([#1253](https://github.com/bluealloy/revm/pull/1253))
@@ -139,7 +139,7 @@ Migration to alloy primitive types.
 
 Full git log:
 * af4146a - feat: Alloy primitives (#724) (15 hours ago) <evalir>
-* 83d27b0 - fix: use u128 for calc_blob_gasprice (#764) (16 hours ago) <Dan Cline>
+* 83d27b0 - fix: use u128 for calc_blob_energyprice (#764) (16 hours ago) <Dan Cline>
 * 1f86e45 - chore(deps): bump proptest from 1.2.0 to 1.3.1 (#763) (21 hours ago) <dependabot[bot]
 
 # v1.2.0
@@ -155,7 +155,7 @@ Summary of biggest changes:
 * Removal of hash from Bytecode.
 * ChainId converted from U256 to u64.
 * CfgEnv marked as `non_exhaustive` to accommodate future changes.
-* Introduce `InvalidHeader` error that contains `prevrandao` and `blob gas` not set errors.
+* Introduce `InvalidHeader` error that contains `prevrandao` and `blob energy` not set errors.
 * c-kzg added as dependency as it is needed for `KzgSetting` that is sed inside EnvCfg.
 
 Full git log:
@@ -227,7 +227,7 @@ One change:
 date: 04.04.2023
 
 Mosty utility functions, additional checks and convenience changes.
-Old bytecode that supported gas block was replaced with jumpmap only bitvec.
+Old bytecode that supported energy block was replaced with jumpmap only bitvec.
 
 Changelog: 
 * 992a11c - (HEAD -> v/310, origin/lib_versions) bump all (81 minutes ago) <rakita>
@@ -244,7 +244,7 @@ Changelog:
 * 7bb73da - feat: Add check for chainID (#393) (4 weeks ago) <chirag-bgh>
 * 3a17ca8 - feat: add b256<->u256 from impls (#398) (4 weeks ago) <Matthias Seitz>
 * 3789509 - feat: add API to retrieve unpadded bytecode (#397) (5 weeks ago) <Wodann>
-* f91d5f9 - refactor: remove gas blocks (#391) (5 weeks ago) <Bjerg>
+* f91d5f9 - refactor: remove energy blocks (#391) (5 weeks ago) <Bjerg>
 * 5efd9d1 - impl NonceTooHigh/ NonceTooLow checks (#383) (6 weeks ago) <gd>
 * 188dacf - improvement: derive Debug for DatabaseComponentError (#377) (7 weeks ago) <Wodann>
 * 0401cfd - Add B160/B256 From primitive_types traits (#380) (7 weeks ago) <Francesco Cinà>
@@ -256,11 +256,11 @@ Changelog:
 * 3158ce9 - feat: implement Debug for DatabaseComponentError if supported (#363) (8 weeks ago) <Wodann>
 
 
-* d9727c2 - improvement: add error details to InvalidTransaction::LackOfFundForGasLimit (#364) (8 weeks ago) <Wodann>
+* d9727c2 - improvement: add error details to InvalidTransaction::LackOfFundForEnergyLimit (#364) (8 weeks ago) <Wodann>
 * 5d6ecd0 - improvement: implement BlockHash for Arc<BlockHashRef> (#361) (8 weeks ago) <Wodann>
 * ae9baba - improvement: implement State for Arc<StateRef> (#360) (8 weeks ago) <Wodann>
 * 1fca102 - chore(deps): bump proptest from 1.0.0 to 1.1.0 (#358) (8 weeks ago) <dependabot[bot]>
-* 9b663bb - feat: Different OutOfGas Error types (#354) (9 weeks ago) <Chirag Baghasingh>
+* 9b663bb - feat: Different OutOfEnergy Error types (#354) (9 weeks ago) <Chirag Baghasingh>
 
 # v1.0.0
 date: 29.01.2023

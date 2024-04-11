@@ -2,7 +2,7 @@ use super::inner_evm_context::InnerEvmContext;
 use crate::{
     db::Database,
     interpreter::{
-        return_ok, CallInputs, Contract, Gas, InstructionResult, Interpreter, InterpreterResult,
+        return_ok, CallInputs, Contract, Energy, InstructionResult, Interpreter, InterpreterResult,
     },
     primitives::{Address, Bytes, EVMError, Env, HashSet, U256},
     ContextPrecompiles, FrameOrResult, CALL_STACK_LIMIT,
@@ -104,21 +104,21 @@ impl<DB: Database> EvmContext<DB> {
         &mut self,
         address: Address,
         input_data: &Bytes,
-        gas: Gas,
+        energy: Energy,
     ) -> Option<InterpreterResult> {
         let out = self
             .precompiles
-            .call(address, input_data, gas.limit(), &mut self.inner)?;
+            .call(address, input_data, energy.limit(), &mut self.inner)?;
 
         let mut result = InterpreterResult {
             result: InstructionResult::Return,
-            gas,
+            energy,
             output: Bytes::new(),
         };
 
         match out {
-            Ok((gas_used, data)) => {
-                if result.gas.record_cost(gas_used) {
+            Ok((energy_used, data)) => {
+                if result.energy.record_cost(energy_used) {
                     result.result = InstructionResult::Return;
                     result.output = data;
                 } else {
@@ -126,7 +126,7 @@ impl<DB: Database> EvmContext<DB> {
                 }
             }
             Err(e) => {
-                result.result = if e == crate::precompile::Error::OutOfGas {
+                result.result = if e == crate::precompile::Error::OutOfEnergy {
                     InstructionResult::PrecompileOOG
                 } else {
                     InstructionResult::PrecompileError
@@ -142,13 +142,13 @@ impl<DB: Database> EvmContext<DB> {
         &mut self,
         inputs: &CallInputs,
     ) -> Result<FrameOrResult, EVMError<DB::Error>> {
-        let gas = Gas::new(inputs.gas_limit);
+        let energy = Energy::new(inputs.energy_limit);
 
         let return_result = |instruction_result: InstructionResult| {
             Ok(FrameOrResult::new_call_result(
                 InterpreterResult {
                     result: instruction_result,
-                    gas,
+                    energy,
                     output: Bytes::new(),
                 },
                 inputs.return_memory_offset.clone(),
@@ -187,7 +187,7 @@ impl<DB: Database> EvmContext<DB> {
             return return_result(result);
         }
 
-        if let Some(result) = self.call_precompile(inputs.contract, &inputs.input, gas) {
+        if let Some(result) = self.call_precompile(inputs.contract, &inputs.input, energy) {
             if matches!(result.result, return_ok!()) {
                 self.journaled_state.checkpoint_commit();
             } else {
@@ -208,7 +208,7 @@ impl<DB: Database> EvmContext<DB> {
             Ok(FrameOrResult::new_call_frame(
                 inputs.return_memory_offset.clone(),
                 checkpoint,
-                Interpreter::new(contract, gas.limit(), inputs.is_static),
+                Interpreter::new(contract, energy.limit(), inputs.is_static),
             ))
         } else {
             self.journaled_state.checkpoint_commit();
@@ -241,7 +241,7 @@ pub(crate) mod test_utils {
                 value: U256::ZERO,
             },
             input: Bytes::new(),
-            gas_limit: 0,
+            energy_limit: 0,
             context: revm_interpreter::CallContext {
                 address: MOCK_CALLER,
                 caller: MOCK_CALLER,

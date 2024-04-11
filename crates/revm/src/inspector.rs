@@ -9,7 +9,7 @@ use auto_impl::auto_impl;
 mod customprinter;
 #[cfg(all(feature = "std", feature = "serde-json"))]
 mod eip3155;
-mod gas;
+mod energy;
 mod handler_register;
 mod noop;
 
@@ -24,7 +24,7 @@ pub mod inspectors {
     pub use super::customprinter::CustomPrintTracer;
     #[cfg(all(feature = "std", feature = "serde-json"))]
     pub use super::eip3155::TracerEip3155;
-    pub use super::gas::GasInspector;
+    pub use super::energy::EnergyInspector;
     pub use super::noop::NoOpInspector;
 }
 
@@ -121,7 +121,7 @@ pub trait Inspector<DB: Database> {
 
     /// Called when a contract has been created.
     ///
-    /// InstructionResulting anything other than the values passed to this function (`(ret, remaining_gas,
+    /// InstructionResulting anything other than the values passed to this function (`(ret, remaining_energy,
     /// address, out)`) will alter the result of the create.
     #[inline]
     fn create_end(

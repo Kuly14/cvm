@@ -14,10 +14,10 @@ pub enum ContextPrecompile<DB: Database> {
     /// Ordinary precompiles
     Ordinary(Precompile),
     /// Stateful precompile that is Arc over [`ContextStatefulPrecompile`] trait.
-    /// It takes a reference to input, gas limit and Context.
+    /// It takes a reference to input, energy limit and Context.
     ContextStateful(ContextStatefulPrecompileArc<DB>),
     /// Mutable stateful precompile that is Box over [`ContextStatefulPrecompileMut`] trait.
-    /// It takes a reference to input, gas limit and context.
+    /// It takes a reference to input, energy limit and context.
     ContextStatefulMut(ContextStatefulPrecompileBox<DB>),
 }
 
@@ -61,15 +61,17 @@ impl<DB: Database> ContextPrecompiles<DB> {
         &mut self,
         addess: Address,
         bytes: &Bytes,
-        gas_price: u64,
+        energy_price: u64,
         evmctx: &mut InnerEvmContext<DB>,
     ) -> Option<PrecompileResult> {
         let precompile = self.inner.get_mut(&addess)?;
 
         match precompile {
-            ContextPrecompile::Ordinary(p) => Some(p.call(bytes, gas_price, &evmctx.env)),
-            ContextPrecompile::ContextStatefulMut(p) => Some(p.call_mut(bytes, gas_price, evmctx)),
-            ContextPrecompile::ContextStateful(p) => Some(p.call(bytes, gas_price, evmctx)),
+            ContextPrecompile::Ordinary(p) => Some(p.call(bytes, energy_price, &evmctx.env)),
+            ContextPrecompile::ContextStatefulMut(p) => {
+                Some(p.call_mut(bytes, energy_price, evmctx))
+            }
+            ContextPrecompile::ContextStateful(p) => Some(p.call(bytes, energy_price, evmctx)),
         }
     }
 }
@@ -102,7 +104,7 @@ pub trait ContextStatefulPrecompile<DB: Database>: Sync + Send {
     fn call(
         &self,
         bytes: &Bytes,
-        gas_price: u64,
+        energy_price: u64,
         evmctx: &mut InnerEvmContext<DB>,
     ) -> PrecompileResult;
 }
@@ -113,7 +115,7 @@ pub trait ContextStatefulPrecompileMut<DB: Database>: DynClone + Send + Sync {
     fn call_mut(
         &mut self,
         bytes: &Bytes,
-        gas_price: u64,
+        energy_price: u64,
         evmctx: &mut InnerEvmContext<DB>,
     ) -> PrecompileResult;
 }

@@ -116,13 +116,13 @@ impl L1BlockInfo {
         }
     }
 
-    /// Calculate the data gas for posting the transaction on L1. Calldata costs 16 gas per non-zero
-    /// byte and 4 gas per zero byte.
+    /// Calculate the data energy for posting the transaction on L1. Calldata costs 16 energy per non-zero
+    /// byte and 4 energy per zero byte.
     ///
     /// Prior to regolith, an extra 68 non-zero bytes were included in the rollup data costs to
     /// account for the empty signature.
-    pub fn data_gas(&self, input: &[u8], spec_id: SpecId) -> U256 {
-        let mut rollup_data_gas_cost = U256::from(input.iter().fold(0, |acc, byte| {
+    pub fn data_energy(&self, input: &[u8], spec_id: SpecId) -> U256 {
+        let mut rollup_data_energy_cost = U256::from(input.iter().fold(0, |acc, byte| {
             acc + if *byte == 0x00 {
                 ZERO_BYTE_COST
             } else {
@@ -132,13 +132,13 @@ impl L1BlockInfo {
 
         // Prior to regolith, an extra 68 non zero bytes were included in the rollup data costs.
         if !spec_id.is_enabled_in(SpecId::REGOLITH) {
-            rollup_data_gas_cost += U256::from(NON_ZERO_BYTE_COST).mul(U256::from(68));
+            rollup_data_energy_cost += U256::from(NON_ZERO_BYTE_COST).mul(U256::from(68));
         }
 
-        rollup_data_gas_cost
+        rollup_data_energy_cost
     }
 
-    /// Calculate the gas cost of a transaction based on L1 block data posted on L2, depending on the [SpecId] passed.
+    /// Calculate the energy cost of a transaction based on L1 block data posted on L2, depending on the [SpecId] passed.
     pub fn calculate_tx_l1_cost(&self, input: &[u8], spec_id: SpecId) -> U256 {
         // If the input is a deposit transaction or empty, the default value is zero.
         if input.is_empty() || input.first() == Some(&0x7F) {
@@ -152,26 +152,26 @@ impl L1BlockInfo {
         }
     }
 
-    /// Calculate the gas cost of a transaction based on L1 block data posted on L2, pre-Ecotone.
+    /// Calculate the energy cost of a transaction based on L1 block data posted on L2, pre-Ecotone.
     fn calculate_tx_l1_cost_bedrock(&self, input: &[u8], spec_id: SpecId) -> U256 {
-        let rollup_data_gas_cost = self.data_gas(input, spec_id);
-        rollup_data_gas_cost
+        let rollup_data_energy_cost = self.data_energy(input, spec_id);
+        rollup_data_energy_cost
             .saturating_add(self.l1_fee_overhead.unwrap_or_default())
             .saturating_mul(self.l1_base_fee)
             .saturating_mul(self.l1_base_fee_scalar)
             .wrapping_div(U256::from(1_000_000))
     }
 
-    /// Calculate the gas cost of a transaction based on L1 block data posted on L2, post-Ecotone.
+    /// Calculate the energy cost of a transaction based on L1 block data posted on L2, post-Ecotone.
     ///
     /// [SpecId::ECOTONE] L1 cost function:
-    /// `(calldataGas/16)*(l1BaseFee*16*l1BaseFeeScalar + l1BlobBaseFee*l1BlobBaseFeeScalar)/1e6`
+    /// `(calldataEnergy/16)*(l1BaseFee*16*l1BaseFeeScalar + l1BlobBaseFee*l1BlobBaseFeeScalar)/1e6`
     ///
-    /// We divide "calldataGas" by 16 to change from units of calldata gas to "estimated # of bytes when compressed".
+    /// We divide "calldataEnergy" by 16 to change from units of calldata energy to "estimated # of bytes when compressed".
     /// Known as "compressedTxSize" in the spec.
     ///
     /// Function is actually computed as follows for better precision under integer arithmetic:
-    /// `calldataGas*(l1BaseFee*16*l1BaseFeeScalar + l1BlobBaseFee*l1BlobBaseFeeScalar)/16e6`
+    /// `calldataEnergy*(l1BaseFee*16*l1BaseFeeScalar + l1BlobBaseFee*l1BlobBaseFeeScalar)/16e6`
     fn calculate_tx_l1_cost_ecotone(&self, input: &[u8], spec_id: SpecId) -> U256 {
         // There is an edgecase where, for the very first Ecotone block (unless it is activated at Genesis), we must
         // use the Bedrock cost function. To determine if this is the case, we can check if the Ecotone parameters are
@@ -180,7 +180,7 @@ impl L1BlockInfo {
             return self.calculate_tx_l1_cost_bedrock(input, spec_id);
         }
 
-        let rollup_data_gas_cost = self.data_gas(input, spec_id);
+        let rollup_data_energy_cost = self.data_energy(input, spec_id);
         let calldata_cost_per_byte = self
             .l1_base_fee
             .saturating_mul(U256::from(16))
@@ -192,7 +192,7 @@ impl L1BlockInfo {
 
         calldata_cost_per_byte
             .saturating_add(blob_cost_per_byte)
-            .saturating_mul(rollup_data_gas_cost)
+            .saturating_mul(rollup_data_energy_cost)
             .wrapping_div(U256::from(1_000_000 * 16))
     }
 }
@@ -203,7 +203,7 @@ mod tests {
     use crate::primitives::bytes;
 
     #[test]
-    fn test_data_gas_non_zero_bytes() {
+    fn test_data_energy_non_zero_bytes() {
         let l1_block_info = L1BlockInfo {
             l1_base_fee: U256::from(1_000_000),
             l1_fee_overhead: Some(U256::from(1_000_000)),
@@ -215,20 +215,20 @@ mod tests {
         // 0xFACADE = 1111 1010 . 1100 1010 . 1101 1110
 
         // Pre-regolith (ie bedrock) has an extra 68 non-zero bytes
-        // gas cost = 3 non-zero bytes * NON_ZERO_BYTE_COST + NON_ZERO_BYTE_COST * 68
-        // gas cost = 3 * 16 + 68 * 16 = 1136
+        // energy cost = 3 non-zero bytes * NON_ZERO_BYTE_COST + NON_ZERO_BYTE_COST * 68
+        // energy cost = 3 * 16 + 68 * 16 = 1136
         let input = bytes!("FACADE");
-        let bedrock_data_gas = l1_block_info.data_gas(&input, SpecId::BEDROCK);
-        assert_eq!(bedrock_data_gas, U256::from(1136));
+        let bedrock_data_energy = l1_block_info.data_energy(&input, SpecId::BEDROCK);
+        assert_eq!(bedrock_data_energy, U256::from(1136));
 
         // Regolith has no added 68 non zero bytes
-        // gas cost = 3 * 16 = 48
-        let regolith_data_gas = l1_block_info.data_gas(&input, SpecId::REGOLITH);
-        assert_eq!(regolith_data_gas, U256::from(48));
+        // energy cost = 3 * 16 = 48
+        let regolith_data_energy = l1_block_info.data_energy(&input, SpecId::REGOLITH);
+        assert_eq!(regolith_data_energy, U256::from(48));
     }
 
     #[test]
-    fn test_data_gas_zero_bytes() {
+    fn test_data_energy_zero_bytes() {
         let l1_block_info = L1BlockInfo {
             l1_base_fee: U256::from(1_000_000),
             l1_fee_overhead: Some(U256::from(1_000_000)),
@@ -240,16 +240,16 @@ mod tests {
         // 0xFA00CA00DE = 1111 1010 . 0000 0000 . 1100 1010 . 0000 0000 . 1101 1110
 
         // Pre-regolith (ie bedrock) has an extra 68 non-zero bytes
-        // gas cost = 3 non-zero * NON_ZERO_BYTE_COST + 2 * ZERO_BYTE_COST + NON_ZERO_BYTE_COST * 68
-        // gas cost = 3 * 16 + 2 * 4 + 68 * 16 = 1144
+        // energy cost = 3 non-zero * NON_ZERO_BYTE_COST + 2 * ZERO_BYTE_COST + NON_ZERO_BYTE_COST * 68
+        // energy cost = 3 * 16 + 2 * 4 + 68 * 16 = 1144
         let input = bytes!("FA00CA00DE");
-        let bedrock_data_gas = l1_block_info.data_gas(&input, SpecId::BEDROCK);
-        assert_eq!(bedrock_data_gas, U256::from(1144));
+        let bedrock_data_energy = l1_block_info.data_energy(&input, SpecId::BEDROCK);
+        assert_eq!(bedrock_data_energy, U256::from(1144));
 
         // Regolith has no added 68 non zero bytes
-        // gas cost = 3 * 16 + 2 * 4 = 56
-        let regolith_data_gas = l1_block_info.data_gas(&input, SpecId::REGOLITH);
-        assert_eq!(regolith_data_gas, U256::from(56));
+        // energy cost = 3 * 16 + 2 * 4 = 56
+        let regolith_data_energy = l1_block_info.data_energy(&input, SpecId::REGOLITH);
+        assert_eq!(regolith_data_energy, U256::from(56));
     }
 
     #[test]
@@ -262,18 +262,18 @@ mod tests {
         };
 
         let input = bytes!("FACADE");
-        let gas_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::REGOLITH);
-        assert_eq!(gas_cost, U256::from(1048));
+        let energy_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::REGOLITH);
+        assert_eq!(energy_cost, U256::from(1048));
 
-        // Zero rollup data gas cost should result in zero
+        // Zero rollup data energy cost should result in zero
         let input = bytes!("");
-        let gas_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::REGOLITH);
-        assert_eq!(gas_cost, U256::ZERO);
+        let energy_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::REGOLITH);
+        assert_eq!(energy_cost, U256::ZERO);
 
         // Deposit transactions with the EIP-2718 type of 0x7F should result in zero
         let input = bytes!("7FFACADE");
-        let gas_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::REGOLITH);
-        assert_eq!(gas_cost, U256::ZERO);
+        let energy_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::REGOLITH);
+        assert_eq!(energy_cost, U256::ZERO);
     }
 
     #[test]
@@ -287,27 +287,27 @@ mod tests {
             ..Default::default()
         };
 
-        // calldataGas * (l1BaseFee * 16 * l1BaseFeeScalar + l1BlobBaseFee * l1BlobBaseFeeScalar) / (16 * 1e6)
+        // calldataEnergy * (l1BaseFee * 16 * l1BaseFeeScalar + l1BlobBaseFee * l1BlobBaseFeeScalar) / (16 * 1e6)
         // = (16 * 3) * (1000 * 16 * 1000 + 1000 * 1000) / (16 * 1e6)
         // = 51
         let input = bytes!("FACADE");
-        let gas_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::ECOTONE);
-        assert_eq!(gas_cost, U256::from(51));
+        let energy_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::ECOTONE);
+        assert_eq!(energy_cost, U256::from(51));
 
-        // Zero rollup data gas cost should result in zero
+        // Zero rollup data energy cost should result in zero
         let input = bytes!("");
-        let gas_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::ECOTONE);
-        assert_eq!(gas_cost, U256::ZERO);
+        let energy_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::ECOTONE);
+        assert_eq!(energy_cost, U256::ZERO);
 
         // Deposit transactions with the EIP-2718 type of 0x7F should result in zero
         let input = bytes!("7FFACADE");
-        let gas_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::ECOTONE);
-        assert_eq!(gas_cost, U256::ZERO);
+        let energy_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::ECOTONE);
+        assert_eq!(energy_cost, U256::ZERO);
 
         // If the scalars are empty, the bedrock cost function should be used.
         l1_block_info.empty_scalars = true;
         let input = bytes!("FACADE");
-        let gas_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::ECOTONE);
-        assert_eq!(gas_cost, U256::from(1048));
+        let energy_cost = l1_block_info.calculate_tx_l1_cost(&input, SpecId::ECOTONE);
+        assert_eq!(energy_cost, U256::from(1048));
     }
 }

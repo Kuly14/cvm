@@ -4,7 +4,7 @@ The `instruction_result.rs` module of this Rust EVM implementation includes the 
 
 -  `InstructionResult` Enum
 
-    The `InstructionResult` enum categorizes the different types of results that can arise from executing an EVM instruction. This enumeration uses the `#[repr(u8)]` attribute, meaning its variants have an explicit storage representation of an 8-bit unsigned integer. The different instruction results represent outcomes such as successful continuation, stop, return, self-destruction, reversion, deep call, out of funds, out of gas, and various error conditions.
+    The `InstructionResult` enum categorizes the different types of results that can arise from executing an EVM instruction. This enumeration uses the `#[repr(u8)]` attribute, meaning its variants have an explicit storage representation of an 8-bit unsigned integer. The different instruction results represent outcomes such as successful continuation, stop, return, self-destruction, reversion, deep call, out of funds, out of energy, and various error conditions.
 
 - `SuccessOrHalt` Enum
 

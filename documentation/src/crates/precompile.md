@@ -19,7 +19,7 @@ There are 6 precompiles implemented in REVM, and they are: `blake2`, `bn128` cur
 
 - `Address`: A type alias for an array of 20 bytes. This is typically used to represent Ethereum addresses.
 - `B256`: A type alias for an array of 32 bytes, typically used to represent 256-bit hashes or integer values in Ethereum.
-- `PrecompileOutput`: Represents the output of a precompiled contract execution, including the gas cost, output data, and any logs generated.
+- `PrecompileOutput`: Represents the output of a precompiled contract execution, including the energy cost, output data, and any logs generated.
 - `Log`: Represents an Ethereum log, with an address, a list of topics, and associated data.
 - `Precompiles`: A collection of precompiled contracts available in a particular hard fork of Ethereum.
 - `Precompile`: Represents a precompiled contract, which can either be a standard Ethereum precompile, or a custom precompile.
@@ -28,7 +28,7 @@ There are 6 precompiles implemented in REVM, and they are: `blake2`, `bn128` cur
 
 ### Functions:
 
-- `calc_linear_cost_u32`: A utility function to calculate the gas cost for certain precompiles based on their input length.
+- `calc_linear_cost_u32`: A utility function to calculate the energy cost for certain precompiles based on their input length.
 - `u64_to_b160`: A utility function for converting a 64-bit unsigned integer into a 20-byte Ethereum address.
 
 ### External Crates:

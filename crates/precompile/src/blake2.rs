@@ -10,7 +10,7 @@ pub const FUN: PrecompileWithAddress =
 /// reference: <https://eips.ethereum.org/EIPS/eip-152>
 /// input format:
 /// [4 bytes for rounds][64 bytes for h][128 bytes for m][8 bytes for t_0][8 bytes for t_1][1 byte for f]
-pub fn run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
+pub fn run(input: &Bytes, energy_limit: u64) -> PrecompileResult {
     let input = &input[..];
 
     if input.len() != INPUT_LENGTH {
@@ -25,9 +25,9 @@ pub fn run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
 
     // rounds 4 bytes
     let rounds = u32::from_be_bytes(input[..4].try_into().unwrap()) as usize;
-    let gas_used = rounds as u64 * F_ROUND;
-    if gas_used > gas_limit {
-        return Err(Error::OutOfGas);
+    let energy_used = rounds as u64 * F_ROUND;
+    if energy_used > energy_limit {
+        return Err(Error::OutOfEnergy);
     }
 
     let mut h = [0u64; 8];
@@ -51,7 +51,7 @@ pub fn run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
         out[i..i + 8].copy_from_slice(&h.to_le_bytes());
     }
 
-    Ok((gas_used, out.into()))
+    Ok((energy_used, out.into()))
 }
 
 pub mod algo {

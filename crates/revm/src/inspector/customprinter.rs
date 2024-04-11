@@ -5,7 +5,7 @@ use revm_interpreter::CallOutcome;
 use revm_interpreter::CreateOutcome;
 
 use crate::{
-    inspectors::GasInspector,
+    inspectors::EnergyInspector,
     interpreter::{opcode, CallInputs, CreateInputs, Interpreter},
     primitives::{Address, U256},
     Database, EvmContext, Inspector,
@@ -16,12 +16,12 @@ use crate::{
 /// It is a great tool if some debugging is needed.
 #[derive(Clone, Debug, Default)]
 pub struct CustomPrintTracer {
-    gas_inspector: GasInspector,
+    energy_inspector: EnergyInspector,
 }
 
 impl<DB: Database> Inspector<DB> for CustomPrintTracer {
     fn initialize_interp(&mut self, interp: &mut Interpreter, context: &mut EvmContext<DB>) {
-        self.gas_inspector.initialize_interp(interp, context);
+        self.energy_inspector.initialize_interp(interp, context);
     }
 
     // get opcode by calling `interp.contract.opcode(interp.program_counter())`.
@@ -30,29 +30,29 @@ impl<DB: Database> Inspector<DB> for CustomPrintTracer {
         let opcode = interp.current_opcode();
         let opcode_str = opcode::OPCODE_JUMPMAP[opcode as usize];
 
-        let gas_remaining = self.gas_inspector.gas_remaining();
+        let energy_remaining = self.energy_inspector.energy_remaining();
 
         let memory_size = interp.shared_memory.len();
 
         println!(
-            "depth:{}, PC:{}, gas:{:#x}({}), OPCODE: {:?}({:?})  refund:{:#x}({}) Stack:{:?}, Data size:{}",
+            "depth:{}, PC:{}, energy:{:#x}({}), OPCODE: {:?}({:?})  refund:{:#x}({}) Stack:{:?}, Data size:{}",
             context.journaled_state.depth(),
             interp.program_counter(),
-            gas_remaining,
-            gas_remaining,
+            energy_remaining,
+            energy_remaining,
             opcode_str.unwrap_or("UNKNOWN"),
             opcode,
-            interp.gas.refunded(),
-            interp.gas.refunded(),
+            interp.energy.refunded(),
+            interp.energy.refunded(),
             interp.stack.data(),
             memory_size,
         );
 
-        self.gas_inspector.step(interp, context);
+        self.energy_inspector.step(interp, context);
     }
 
     fn step_end(&mut self, interp: &mut Interpreter, context: &mut EvmContext<DB>) {
-        self.gas_inspector.step_end(interp, context);
+        self.energy_inspector.step_end(interp, context);
     }
 
     fn call_end(
@@ -61,7 +61,7 @@ impl<DB: Database> Inspector<DB> for CustomPrintTracer {
         inputs: &CallInputs,
         outcome: CallOutcome,
     ) -> CallOutcome {
-        self.gas_inspector.call_end(context, inputs, outcome)
+        self.energy_inspector.call_end(context, inputs, outcome)
     }
 
     fn create_end(
@@ -70,7 +70,7 @@ impl<DB: Database> Inspector<DB> for CustomPrintTracer {
         inputs: &CreateInputs,
         outcome: CreateOutcome,
     ) -> CreateOutcome {
-        self.gas_inspector.create_end(context, inputs, outcome)
+        self.energy_inspector.create_end(context, inputs, outcome)
     }
 
     fn call(
@@ -95,8 +95,8 @@ impl<DB: Database> Inspector<DB> for CustomPrintTracer {
         inputs: &mut CreateInputs,
     ) -> Option<CreateOutcome> {
         println!(
-            "CREATE CALL: caller:{:?}, scheme:{:?}, value:{:?}, init_code:{:?}, gas:{:?}",
-            inputs.caller, inputs.scheme, inputs.value, inputs.init_code, inputs.gas_limit
+            "CREATE CALL: caller:{:?}, scheme:{:?}, value:{:?}, init_code:{:?}, energy:{:?}",
+            inputs.caller, inputs.scheme, inputs.value, inputs.init_code, inputs.energy_limit
         );
         None
     }
@@ -119,7 +119,7 @@ mod test {
     };
 
     #[test]
-    fn gas_calculation_underflow() {
+    fn energy_calculation_underflow() {
         let callee = address!("5fdcca53617f4d2b9134b29090c87d01058e27e9");
 
         // https://github.com/bluealloy/revm/issues/277

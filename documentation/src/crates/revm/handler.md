@@ -31,13 +31,13 @@ Consists of functions that are used to validate transaction and block data.
 They are called before the execution of the transaction, to check whether the (`Environment`) data is valid.
 They are called in the following order:
 * `validate_env`:
-  Verifies if all data is set in `Environment` and if valid, for example if `gas_limit` is smaller than block `gas_limit`.
-* `validate_initial_tx_gas`:
-  Calculates initial gas needed for the transaction to be executed and checks if it is less them the transaction gas_limit.
+  Verifies if all data is set in `Environment` and if valid, for example if `energy_limit` is smaller than block `energy_limit`.
+* `validate_initial_tx_energy`:
+  Calculates initial energy needed for the transaction to be executed and checks if it is less them the transaction energy_limit.
   Note that this does not touch the `Database` or state.
 * `validate_tx_against_state`:
   Loads the caller account and checks their information.
-  Among them the nonce, if there is enough balance to pay for max gas spent and balance transferred. 
+  Among them the nonce, if there is enough balance to pay for max energy spent and balance transferred. 
 
 ### PreExecutionHandler
 
@@ -49,7 +49,7 @@ They are called in the following order:
   Retrieves the precompiles for the given spec ID.
   More info: [precompile](../precompile.md). 
 * `deduct_caller`:
-   Deducts values from the caller to calculate the maximum amount of gas that can be spent on the transaction.
+   Deducts values from the caller to calculate the maximum amount of energy that can be spent on the transaction.
    This loads the caller account from the `Database`.
 
 ### ExecutionHandler
@@ -63,7 +63,7 @@ Consists of functions that handle the execution of the transaction and the stack
 
 * `call_return`:
     Called after call frame returns from execution.
-    It is used to calculate the gas that is returned from the frame and create the `FrameResult` that is used to apply the outcome to parent frame in `insert_call_outcome`.
+    It is used to calculate the energy that is returned from the frame and create the `FrameResult` that is used to apply the outcome to parent frame in `insert_call_outcome`.
 
 * `insert_call_outcome`:
     Inserts the call outcome to the parent frame.
@@ -75,14 +75,14 @@ Consists of functions that handle the execution of the transaction and the stack
 
 * `create_return`:
     This handler is called after every frame is executed (Expect first).
-    It will calculate the gas that is returned from the frame and apply output to the parent frame.
+    It will calculate the energy that is returned from the frame and apply output to the parent frame.
 
 * `insert_create_outcome`:
   Inserts the outcome of a call into the virtual machine's state.
 
 * `last_frame_return`:
     This handler is called after last frame is returned.
-    It is used to calculate the gas that is returned from the first frame and incorporate transaction gas limit (the first frame has limit `gas_limit - initial_gas`).
+    It is used to calculate the energy that is returned from the first frame and incorporate transaction energy limit (the first frame has limit `energy_limit - initial_energy`).
 
 ### InstructionTable
 
@@ -95,8 +95,8 @@ Look at the Interpreter documentation for more information.
 Is a list of functions that are called after the execution. They are called in the following order:
 
 * `reimburse_caller`:
-    Reimburse the caller with gas that was not spent during the execution of the transaction.
-    Or balance of gas that needs to be refunded.
+    Reimburse the caller with energy that was not spent during the execution of the transaction.
+    Or balance of energy that needs to be refunded.
 
 * `reward_beneficiary`:
     Reward the beneficiary with the fee that was paid for the transaction.

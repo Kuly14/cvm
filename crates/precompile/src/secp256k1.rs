@@ -25,11 +25,11 @@ pub fn ecrecover(
     Ok(hash)
 }
 
-pub fn ec_recover_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
+pub fn ec_recover_run(input: &Bytes, energy_limit: u64) -> PrecompileResult {
     const ECRECOVER_BASE: u64 = 3_000;
 
-    if ECRECOVER_BASE > gas_limit {
-        return Err(Error::OutOfGas);
+    if ECRECOVER_BASE > energy_limit {
+        return Err(Error::OutOfEnergy);
     }
 
     let input = right_pad::<267>(input);

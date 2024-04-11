@@ -1,4 +1,4 @@
-use revm_interpreter::gas;
+use revm_interpreter::energy;
 
 use crate::{
     primitives::{db::Database, EVMError, Env, InvalidTransaction, Spec},
@@ -35,20 +35,20 @@ pub fn validate_tx_against_state<SPEC: Spec, EXT, DB: Database>(
     Ok(())
 }
 
-/// Validate initial transaction gas.
-pub fn validate_initial_tx_gas<SPEC: Spec, DB: Database>(
+/// Validate initial transaction energy.
+pub fn validate_initial_tx_energy<SPEC: Spec, DB: Database>(
     env: &Env,
 ) -> Result<u64, EVMError<DB::Error>> {
     let input = &env.tx.data;
     let is_create = env.tx.transact_to.is_create();
     let access_list = &env.tx.access_list;
 
-    let initial_gas_spend =
-        gas::validate_initial_tx_gas(SPEC::SPEC_ID, input, is_create, access_list);
+    let initial_energy_spend =
+        energy::validate_initial_tx_energy(SPEC::SPEC_ID, input, is_create, access_list);
 
-    // Additional check to see if limit is big enough to cover initial gas.
-    if initial_gas_spend > env.tx.gas_limit {
-        return Err(InvalidTransaction::CallGasCostMoreThanGasLimit.into());
+    // Additional check to see if limit is big enough to cover initial energy.
+    if initial_energy_spend > env.tx.energy_limit {
+        return Err(InvalidTransaction::CallEnergyCostMoreThanEnergyLimit.into());
     }
-    Ok(initial_gas_spend)
+    Ok(initial_energy_spend)
 }

@@ -67,7 +67,7 @@ More specifically:
   For most networks, the starting value is 1, but this may vary for test networks with non-zero default starting nonces.
 
 - **`CALL` and `SELFDESTRUCT` charges**:
-  Prior to [EIP-161](https://eips.ethereum.org/EIPS/eip-161), a gas charge of `25,000` was levied for `CALL` and `SELFDESTRUCT` operations if the destination account did not exist.
+  Prior to [EIP-161](https://eips.ethereum.org/EIPS/eip-161), a energy charge of `25,000` was levied for `CALL` and `SELFDESTRUCT` operations if the destination account did not exist.
   With [EIP-161](https://eips.ethereum.org/EIPS/eip-161), this charge is only applied if the operation transfers more than zero value and the destination account is dead (non-existent or empty).
 
 - **Existence of Empty Accounts**:
@@ -92,14 +92,14 @@ Prior to this change, it was possible for the state trie to become bloated with 
 This bloating resulted in increased storage requirements and slower processing times for Ethereum nodes.
 
 By removing these empty accounts, the size of the state trie can be reduced, leading to improvements in the performance of Ethereum nodes.
-Additionally, the changes regarding the gas costs for `CALL` and `SELFDESTRUCT` operations add a new level of nuance to the Ethereum gas model, further optimizing transaction processing.
+Additionally, the changes regarding the energy costs for `CALL` and `SELFDESTRUCT` operations add a new level of nuance to the Ethereum energy model, further optimizing transaction processing.
 
 [EIP-161](https://eips.ethereum.org/EIPS/eip-161) has a significant impact on the state management of Ethereum, and thus is highly relevant to the JournaledState module of the revm crate.
 The operations defined in this module, such as loading accounts, self-destructing accounts, and changing storage, must all conform to the rules defined in [EIP-161](https://eips.ethereum.org/EIPS/eip-161).
 
 ## [EIP-658](https://eips.ethereum.org/EIPS/eip-658): Embedding transaction status code in receipts
 
-This EIP is particularly important because it introduced a way to unambiguously determine whether a transaction was successful or not. Before the introduction of [EIP-658](https://eips.ethereum.org/EIPS/eip-658), it was impossible to determine with certainty if a transaction was successful simply based on its gas consumption. This was because with the introduction of the `REVERT` opcode in [EIP-140](https://eips.ethereum.org/EIPS/eip-140), transactions could fail without consuming all gas.
+This EIP is particularly important because it introduced a way to unambiguously determine whether a transaction was successful or not. Before the introduction of [EIP-658](https://eips.ethereum.org/EIPS/eip-658), it was impossible to determine with certainty if a transaction was successful simply based on its energy consumption. This was because with the introduction of the `REVERT` opcode in [EIP-140](https://eips.ethereum.org/EIPS/eip-140), transactions could fail without consuming all energy.
 
 [EIP-658](https://eips.ethereum.org/EIPS/eip-658) replaced the intermediate state root field in the receipt with a status code that indicates whether the top-level call of the transaction succeeded or failed. The status code is 1 for success and 0 for failure.
 
@@ -108,7 +108,7 @@ This EIP affects the JournaledState module, as the result of executing transacti
 ## Rationale
 
 The main motivation behind [EIP-658](https://eips.ethereum.org/EIPS/eip-658) was to provide an unambiguous way to determine the success or failure of a transaction.
-Before [EIP-658](https://eips.ethereum.org/EIPS/eip-658), users had to rely on checking if a transaction had consumed all gas to guess if it had failed.
+Before [EIP-658](https://eips.ethereum.org/EIPS/eip-658), users had to rely on checking if a transaction had consumed all energy to guess if it had failed.
 However, this was not reliable because of the introduction of the `REVERT` opcode in [EIP-140](https://eips.ethereum.org/EIPS/eip-140).
 
 Moreover, although full nodes can replay transactions to get their return status, fast nodes can only do this for transactions after their pivot point, and light nodes cannot do it at all.
@@ -116,31 +116,31 @@ This means that without [EIP-658](https://eips.ethereum.org/EIPS/eip-658), it is
 
 [EIP-658](https://eips.ethereum.org/EIPS/eip-658) addressed this problem by embedding the status code directly in the transaction receipt, making it easily accessible. This change was minimal and non-disruptive, while it significantly improved the clarity and usability of transaction receipts.
 
-## [EIP-2929](https://eips.ethereum.org/EIPS/eip-2929): Gas cost increases for state access opcodes
+## [EIP-2929](https://eips.ethereum.org/EIPS/eip-2929): Energy cost increases for state access opcodes
 
-[EIP-2929](https://eips.ethereum.org/EIPS/eip-2929) proposes an increase in the gas costs for several opcodes when they're used for the first time in a transaction. The EIP was created to mitigate potential DDoS (Distributed Denial of Service) attacks by increasing the cost of potential attack vectors, and to make the stateless witness sizes in Ethereum more manageable.
+[EIP-2929](https://eips.ethereum.org/EIPS/eip-2929) proposes an increase in the energy costs for several opcodes when they're used for the first time in a transaction. The EIP was created to mitigate potential DDoS (Distributed Denial of Service) attacks by increasing the cost of potential attack vectors, and to make the stateless witness sizes in Ethereum more manageable.
 
-[EIP-2929](https://eips.ethereum.org/EIPS/eip-2929) also introduces two sets, `accessed_addresses` and `accessed_storage_keys`, to track the addresses and storage slots that have been accessed within a transaction. This mitigates the additional gas cost for repeated operations on the same address or storage slot within a transaction, as any repeated operation on an already accessed address or storage slot will cost less gas.
+[EIP-2929](https://eips.ethereum.org/EIPS/eip-2929) also introduces two sets, `accessed_addresses` and `accessed_storage_keys`, to track the addresses and storage slots that have been accessed within a transaction. This mitigates the additional energy cost for repeated operations on the same address or storage slot within a transaction, as any repeated operation on an already accessed address or storage slot will cost less energy.
 
 In the context of this EIP, "cold" and "warm" (or "hot") refer to whether an address or storage slot has been accessed before during the execution of a transaction. If an address or storage slot is being accessed for the first time in a transaction, it is referred to as a "cold" access. If it has already been accessed within the same transaction, any subsequent access is referred to as "warm" or "hot".
 
-- **Parameters**: The EIP defines new parameters such as `COLD_SLOAD_COST` (2100 gas) for a "cold" storage read, `COLD_ACCOUNT_ACCESS_COST` (2600 gas) for a "cold" account access, and `WARM_STORAGE_READ_COST` (100 gas) for a "warm" storage read.
+- **Parameters**: The EIP defines new parameters such as `COLD_SLOAD_COST` (2100 energy) for a "cold" storage read, `COLD_ACCOUNT_ACCESS_COST` (2600 energy) for a "cold" account access, and `WARM_STORAGE_READ_COST` (100 energy) for a "warm" storage read.
 
-- **Storage read changes**: For `SLOAD` operation, if the (address, storage_key) pair is not yet in `accessed_storage_keys`, `COLD_SLOAD_COST` gas is charged and the pair is added to `accessed_storage_keys`. If the pair is already in `accessed_storage_keys`, `WARM_STORAGE_READ_COST` gas is charged.
+- **Storage read changes**: For `SLOAD` operation, if the (address, storage_key) pair is not yet in `accessed_storage_keys`, `COLD_SLOAD_COST` energy is charged and the pair is added to `accessed_storage_keys`. If the pair is already in `accessed_storage_keys`, `WARM_STORAGE_READ_COST` energy is charged.
 
-- **Account access changes**: When an address is the target of certain opcodes (`EXTCODESIZE`, `EXTCODECOPY`, `EXTCODEHASH`, `BALANCE`, `CALL`, `CALLCODE`, `DELEGATECALL`, `STATICCALL`), if the target is not in `accessed_addresses`, `COLD_ACCOUNT_ACCESS_COST` gas is charged, and the address is added to `accessed_addresses`. Otherwise, `WARM_STORAGE_READ_COST` gas is charged.
+- **Account access changes**: When an address is the target of certain opcodes (`EXTCODESIZE`, `EXTCODECOPY`, `EXTCODEHASH`, `BALANCE`, `CALL`, `CALLCODE`, `DELEGATECALL`, `STATICCALL`), if the target is not in `accessed_addresses`, `COLD_ACCOUNT_ACCESS_COST` energy is charged, and the address is added to `accessed_addresses`. Otherwise, `WARM_STORAGE_READ_COST` energy is charged.
 
-- **`SSTORE` changes**: For `SSTORE` operation, if the (address, storage_key) pair is not in `accessed_storage_keys`, an additional `COLD_SLOAD_COST` gas is charged, and the pair is added to `accessed_storage_keys`.
+- **`SSTORE` changes**: For `SSTORE` operation, if the (address, storage_key) pair is not in `accessed_storage_keys`, an additional `COLD_SLOAD_COST` energy is charged, and the pair is added to `accessed_storage_keys`.
 
 - **`SELFDESTRUCT` changes**: If the recipient of `SELFDESTRUCT` is not in `accessed_addresses`, an additional `COLD_ACCOUNT_ACCESS_COST` is charged, and the recipient is added to the set.
 
-This methodology allows Ethereum to maintain an internal record of accessed accounts and storage slots within a transaction, making it possible to charge lower gas fees for repeated operations, thereby reducing the cost for such operations.
+This methodology allows Ethereum to maintain an internal record of accessed accounts and storage slots within a transaction, making it possible to charge lower energy fees for repeated operations, thereby reducing the cost for such operations.
 
 ## Rationale
 
 - **Security**:
   Previously, these opcodes were underpriced, making them susceptible to DoS attacks where an attacker sends transactions that access or call a large number of accounts.
-  By increasing the gas costs, the EIP intends to mitigate these potential security risks.
+  By increasing the energy costs, the EIP intends to mitigate these potential security risks.
 
 - **Improving stateless witness sizes**:
   Stateless Ethereum clients don't maintain the complete state of the blockchain, but instead rely on block "witnesses" (a list of all the accounts, storage, and contract code accessed during transaction execution) to validate transactions.

@@ -1,8 +1,8 @@
 use crate::{
     db::Database,
     interpreter::{
-        return_ok, return_revert, CallInputs, CreateInputs, CreateOutcome, Gas, InstructionResult,
-        SharedMemory,
+        return_ok, return_revert, CallInputs, CreateInputs, CreateOutcome, Energy,
+        InstructionResult, SharedMemory,
     },
     primitives::{EVMError, Env, Spec, SpecId},
     CallFrame, Context, CreateFrame, Frame, FrameOrResult, FrameResult,
@@ -17,32 +17,32 @@ pub fn frame_return_with_refund_flag<SPEC: Spec>(
     refund_enabled: bool,
 ) {
     let instruction_result = frame_result.interpreter_result().result;
-    let gas = frame_result.gas_mut();
-    let remaining = gas.remaining();
-    let refunded = gas.refunded();
+    let energy = frame_result.energy_mut();
+    let remaining = energy.remaining();
+    let refunded = energy.refunded();
 
-    // Spend the gas limit. Gas is reimbursed when the tx returns successfully.
-    *gas = Gas::new(env.tx.gas_limit);
-    gas.record_cost(env.tx.gas_limit);
+    // Spend the energy limit. Energy is reimbursed when the tx returns successfully.
+    *energy = Energy::new(env.tx.energy_limit);
+    energy.record_cost(env.tx.energy_limit);
 
     match instruction_result {
         return_ok!() => {
-            gas.erase_cost(remaining);
-            gas.record_refund(refunded);
+            energy.erase_cost(remaining);
+            energy.record_refund(refunded);
         }
         return_revert!() => {
-            gas.erase_cost(remaining);
+            energy.erase_cost(remaining);
         }
         _ => {}
     }
 
-    // Calculate gas refund for transaction.
-    // If config is set to disable gas refund, it will return 0.
+    // Calculate energy refund for transaction.
+    // If config is set to disable energy refund, it will return 0.
     // If spec is set to london, it will decrease the maximum refund amount to 5th part of
-    // gas spend. (Before london it was 2th part of gas spend)
+    // energy spend. (Before london it was 2th part of energy spend)
     if refund_enabled {
         // EIP-3529: Reduction in refunds
-        gas.set_final_refund(SPEC::SPEC_ID.is_enabled_in(SpecId::LONDON));
+        energy.set_final_refund(SPEC::SPEC_ID.is_enabled_in(SpecId::LONDON));
     }
 }
 
@@ -142,52 +142,52 @@ mod tests {
     use revm_precompile::Bytes;
 
     /// Creates frame result.
-    fn call_last_frame_return(instruction_result: InstructionResult, gas: Gas) -> Gas {
+    fn call_last_frame_return(instruction_result: InstructionResult, energy: Energy) -> Energy {
         let mut env = Env::default();
-        env.tx.gas_limit = 100;
+        env.tx.energy_limit = 100;
 
         let mut first_frame = FrameResult::Call(CallOutcome::new(
             InterpreterResult {
                 result: instruction_result,
                 output: Bytes::new(),
-                gas,
+                energy,
             },
             0..0,
         ));
         frame_return_with_refund_flag::<CancunSpec>(&env, &mut first_frame, true);
-        *first_frame.gas()
+        *first_frame.energy()
     }
 
     #[test]
-    fn test_consume_gas() {
-        let gas = call_last_frame_return(InstructionResult::Stop, Gas::new(90));
-        assert_eq!(gas.remaining(), 90);
-        assert_eq!(gas.spent(), 10);
-        assert_eq!(gas.refunded(), 0);
+    fn test_consume_energy() {
+        let energy = call_last_frame_return(InstructionResult::Stop, Energy::new(90));
+        assert_eq!(energy.remaining(), 90);
+        assert_eq!(energy.spent(), 10);
+        assert_eq!(energy.refunded(), 0);
     }
 
     // TODO
     #[test]
-    fn test_consume_gas_with_refund() {
-        let mut return_gas = Gas::new(90);
-        return_gas.record_refund(30);
+    fn test_consume_energy_with_refund() {
+        let mut return_energy = Energy::new(90);
+        return_energy.record_refund(30);
 
-        let gas = call_last_frame_return(InstructionResult::Stop, return_gas);
-        assert_eq!(gas.remaining(), 90);
-        assert_eq!(gas.spent(), 10);
-        assert_eq!(gas.refunded(), 2);
+        let energy = call_last_frame_return(InstructionResult::Stop, return_energy);
+        assert_eq!(energy.remaining(), 90);
+        assert_eq!(energy.spent(), 10);
+        assert_eq!(energy.refunded(), 2);
 
-        let gas = call_last_frame_return(InstructionResult::Revert, return_gas);
-        assert_eq!(gas.remaining(), 90);
-        assert_eq!(gas.spent(), 10);
-        assert_eq!(gas.refunded(), 0);
+        let energy = call_last_frame_return(InstructionResult::Revert, return_energy);
+        assert_eq!(energy.remaining(), 90);
+        assert_eq!(energy.spent(), 10);
+        assert_eq!(energy.refunded(), 0);
     }
 
     #[test]
-    fn test_revert_gas() {
-        let gas = call_last_frame_return(InstructionResult::Revert, Gas::new(90));
-        assert_eq!(gas.remaining(), 90);
-        assert_eq!(gas.spent(), 10);
-        assert_eq!(gas.refunded(), 0);
+    fn test_revert_energy() {
+        let energy = call_last_frame_return(InstructionResult::Revert, Energy::new(90));
+        assert_eq!(energy.remaining(), 90);
+        assert_eq!(energy.spent(), 10);
+        assert_eq!(energy.refunded(), 0);
     }
 }

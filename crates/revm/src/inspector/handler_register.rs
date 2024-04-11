@@ -61,7 +61,7 @@ pub fn inspector_handle_register<'a, DB: Database, EXT: GetInspector<DB>>(
                     let old_log_len = host.context.evm.journaled_state.logs.len();
                     old(interpreter, host);
                     // check if log was added. It is possible that revert happened
-                    // cause of gas or stack underflow.
+                    // cause of energy or stack underflow.
                     if host.context.evm.journaled_state.logs.len() == old_log_len + 1 {
                         // clone log.
                         // TODO decide if we should remove this and leave the comment
@@ -387,7 +387,7 @@ mod tests {
                 tx.caller = address!("1000000000000000000000000000000000000000");
                 tx.transact_to =
                     TransactTo::Call(address!("0000000000000000000000000000000000000000"));
-                tx.gas_limit = 21100;
+                tx.energy_limit = 21100;
             })
             .append_handler_register(inspector_handle_register)
             .build();

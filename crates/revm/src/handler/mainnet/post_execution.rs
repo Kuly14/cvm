@@ -1,5 +1,5 @@
 use crate::{
-    interpreter::{Gas, SuccessOrHalt},
+    interpreter::{Energy, SuccessOrHalt},
     primitives::{
         db::Database, EVMError, ExecutionResult, ResultAndState, Spec, SpecId::LONDON, U256,
     },
@@ -15,21 +15,21 @@ pub fn end<EXT, DB: Database>(
     evm_output
 }
 
-/// Reward beneficiary with gas fee.
+/// Reward beneficiary with energy fee.
 #[inline]
 pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
     context: &mut Context<EXT, DB>,
-    gas: &Gas,
+    energy: &Energy,
 ) -> Result<(), EVMError<DB::Error>> {
     let beneficiary = context.evm.env.block.coinbase;
-    let effective_gas_price = context.evm.env.effective_gas_price();
+    let effective_energy_price = context.evm.env.effective_energy_price();
 
     // transfer fee to coinbase/beneficiary.
-    // EIP-1559 discard basefee for coinbase transfer. Basefee amount of gas is discarded.
-    let coinbase_gas_price = if SPEC::enabled(LONDON) {
-        effective_gas_price.saturating_sub(context.evm.env.block.basefee)
+    // EIP-1559 discard basefee for coinbase transfer. Basefee amount of energy is discarded.
+    let coinbase_energy_price = if SPEC::enabled(LONDON) {
+        effective_energy_price.saturating_sub(context.evm.env.block.basefee)
     } else {
-        effective_gas_price
+        effective_energy_price
     };
 
     let (coinbase_account, _) = context
@@ -39,10 +39,9 @@ pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
         .load_account(beneficiary, &mut context.evm.inner.db)?;
 
     coinbase_account.mark_touch();
-    coinbase_account.info.balance = coinbase_account
-        .info
-        .balance
-        .saturating_add(coinbase_gas_price * U256::from(gas.spent() - gas.refunded() as u64));
+    coinbase_account.info.balance = coinbase_account.info.balance.saturating_add(
+        coinbase_energy_price * U256::from(energy.spent() - energy.refunded() as u64),
+    );
 
     Ok(())
 }
@@ -50,22 +49,21 @@ pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
 #[inline]
 pub fn reimburse_caller<SPEC: Spec, EXT, DB: Database>(
     context: &mut Context<EXT, DB>,
-    gas: &Gas,
+    energy: &Energy,
 ) -> Result<(), EVMError<DB::Error>> {
     let caller = context.evm.env.tx.caller;
-    let effective_gas_price = context.evm.env.effective_gas_price();
+    let effective_energy_price = context.evm.env.effective_energy_price();
 
-    // return balance of not spend gas.
+    // return balance of not spend energy.
     let (caller_account, _) = context
         .evm
         .inner
         .journaled_state
         .load_account(caller, &mut context.evm.inner.db)?;
 
-    caller_account.info.balance = caller_account
-        .info
-        .balance
-        .saturating_add(effective_gas_price * U256::from(gas.remaining() + gas.refunded() as u64));
+    caller_account.info.balance = caller_account.info.balance.saturating_add(
+        effective_energy_price * U256::from(energy.remaining() + energy.refunded() as u64),
+    );
 
     Ok(())
 }
@@ -77,9 +75,9 @@ pub fn output<EXT, DB: Database>(
     result: FrameResult,
 ) -> Result<ResultAndState, EVMError<DB::Error>> {
     core::mem::replace(&mut context.evm.error, Ok(()))?;
-    // used gas with refund calculated.
-    let gas_refunded = result.gas().refunded() as u64;
-    let final_gas_used = result.gas().spent() - gas_refunded;
+    // used energy with refund calculated.
+    let energy_refunded = result.energy().refunded() as u64;
+    let final_energy_used = result.energy().spent() - energy_refunded;
     let output = result.output();
     let instruction_result = result.into_interpreter_result();
 
@@ -89,18 +87,18 @@ pub fn output<EXT, DB: Database>(
     let result = match instruction_result.result.into() {
         SuccessOrHalt::Success(reason) => ExecutionResult::Success {
             reason,
-            gas_used: final_gas_used,
-            gas_refunded,
+            energy_used: final_energy_used,
+            energy_refunded,
             logs,
             output,
         },
         SuccessOrHalt::Revert => ExecutionResult::Revert {
-            gas_used: final_gas_used,
+            energy_used: final_energy_used,
             output: output.into_data(),
         },
         SuccessOrHalt::Halt(reason) => ExecutionResult::Halt {
             reason,
-            gas_used: final_gas_used,
+            energy_used: final_energy_used,
         },
         // Only two internal return flags.
         flag @ (SuccessOrHalt::FatalExternalError

@@ -1,5 +1,5 @@
 use crate::{
-    gas::{self},
+    energy::{self},
     interpreter::Interpreter,
     primitives::{Address, Bytes, Spec, SpecId::*},
     Host, InstructionResult,
@@ -34,12 +34,12 @@ pub fn get_memory_input_and_out_ranges(
 }
 
 #[inline]
-pub fn calc_call_gas<H: Host + ?Sized, SPEC: Spec>(
+pub fn calc_call_energy<H: Host + ?Sized, SPEC: Spec>(
     interpreter: &mut Interpreter,
     host: &mut H,
     to: Address,
     has_transfer: bool,
-    local_gas_limit: u64,
+    local_energy_limit: u64,
     is_call_or_callcode: bool,
     is_call_or_staticcall: bool,
 ) -> Option<u64> {
@@ -49,7 +49,7 @@ pub fn calc_call_gas<H: Host + ?Sized, SPEC: Spec>(
     };
     let is_new = !exist;
 
-    let call_cost = gas::call_cost(
+    let call_cost = energy::call_cost(
         SPEC::SPEC_ID,
         has_transfer,
         is_new,
@@ -58,16 +58,16 @@ pub fn calc_call_gas<H: Host + ?Sized, SPEC: Spec>(
         is_call_or_staticcall,
     );
 
-    gas!(interpreter, call_cost, None);
+    energy!(interpreter, call_cost, None);
 
-    // EIP-150: Gas cost changes for IO-heavy operations
-    let gas_limit = if SPEC::enabled(TANGERINE) {
-        let gas = interpreter.gas().remaining();
-        // take l64 part of gas_limit
-        min(gas - gas / 64, local_gas_limit)
+    // EIP-150: Energy cost changes for IO-heavy operations
+    let energy_limit = if SPEC::enabled(TANGERINE) {
+        let energy = interpreter.energy().remaining();
+        // take l64 part of energy_limit
+        min(energy - energy / 64, local_energy_limit)
     } else {
-        local_gas_limit
+        local_energy_limit
     };
 
-    Some(gas_limit)
+    Some(energy_limit)
 }

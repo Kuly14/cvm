@@ -140,7 +140,7 @@ Fix for k256 build
 # v21 tag
 date 04.04.2023
 
-Shanghai supported and gas block optimization removed.
+Shanghai supported and energy block optimization removed.
 
 * revm: v3.1.0
 * revm-precompile: v2.0.1

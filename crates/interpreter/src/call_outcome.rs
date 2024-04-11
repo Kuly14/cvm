@@ -1,15 +1,15 @@
-use crate::{Gas, InstructionResult, InterpreterResult};
+use crate::{Energy, InstructionResult, InterpreterResult};
 use core::ops::Range;
 use revm_primitives::Bytes;
 
 /// Represents the outcome of a call operation in a virtual machine.
 ///
 /// This struct encapsulates the result of executing an instruction by an interpreter, including
-/// the result itself, gas usage information, and the memory offset where output data is stored.
+/// the result itself, energy usage information, and the memory offset where output data is stored.
 ///
 /// # Fields
 ///
-/// * `result` - The result of the interpreter's execution, including output data and gas usage.
+/// * `result` - The result of the interpreter's execution, including output data and energy usage.
 /// * `memory_offset` - The range in memory where the output data is located.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CallOutcome {
@@ -44,15 +44,15 @@ impl CallOutcome {
         &self.result.result
     }
 
-    /// Returns the gas usage information.
+    /// Returns the energy usage information.
     ///
-    /// Provides access to the gas usage details of the executed instruction.
+    /// Provides access to the energy usage details of the executed instruction.
     ///
     /// # Returns
     ///
-    /// An instance of `Gas` representing the gas usage.
-    pub fn gas(&self) -> Gas {
-        self.result.gas
+    /// An instance of `Energy` representing the energy usage.
+    pub fn energy(&self) -> Energy {
+        self.result.energy
     }
 
     /// Returns a reference to the output data.

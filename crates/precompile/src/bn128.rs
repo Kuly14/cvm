@@ -9,16 +9,20 @@ pub mod add {
 
     const ADDRESS: Address = crate::u64_to_address(6);
 
-    pub const ISTANBUL_ADD_GAS_COST: u64 = 150;
+    pub const ISTANBUL_ADD_ENERGY_COST: u64 = 150;
     pub const ISTANBUL: PrecompileWithAddress = PrecompileWithAddress(
         ADDRESS,
-        Precompile::Standard(|input, gas_limit| run_add(input, ISTANBUL_ADD_GAS_COST, gas_limit)),
+        Precompile::Standard(|input, energy_limit| {
+            run_add(input, ISTANBUL_ADD_ENERGY_COST, energy_limit)
+        }),
     );
 
-    pub const BYZANTIUM_ADD_GAS_COST: u64 = 500;
+    pub const BYZANTIUM_ADD_ENERGY_COST: u64 = 500;
     pub const BYZANTIUM: PrecompileWithAddress = PrecompileWithAddress(
         ADDRESS,
-        Precompile::Standard(|input, gas_limit| run_add(input, BYZANTIUM_ADD_GAS_COST, gas_limit)),
+        Precompile::Standard(|input, energy_limit| {
+            run_add(input, BYZANTIUM_ADD_ENERGY_COST, energy_limit)
+        }),
     );
 }
 
@@ -27,16 +31,20 @@ pub mod mul {
 
     const ADDRESS: Address = crate::u64_to_address(7);
 
-    pub const ISTANBUL_MUL_GAS_COST: u64 = 6_000;
+    pub const ISTANBUL_MUL_ENERGY_COST: u64 = 6_000;
     pub const ISTANBUL: PrecompileWithAddress = PrecompileWithAddress(
         ADDRESS,
-        Precompile::Standard(|input, gas_limit| run_mul(input, ISTANBUL_MUL_GAS_COST, gas_limit)),
+        Precompile::Standard(|input, energy_limit| {
+            run_mul(input, ISTANBUL_MUL_ENERGY_COST, energy_limit)
+        }),
     );
 
-    pub const BYZANTIUM_MUL_GAS_COST: u64 = 40_000;
+    pub const BYZANTIUM_MUL_ENERGY_COST: u64 = 40_000;
     pub const BYZANTIUM: PrecompileWithAddress = PrecompileWithAddress(
         ADDRESS,
-        Precompile::Standard(|input, gas_limit| run_mul(input, BYZANTIUM_MUL_GAS_COST, gas_limit)),
+        Precompile::Standard(|input, energy_limit| {
+            run_mul(input, BYZANTIUM_MUL_ENERGY_COST, energy_limit)
+        }),
     );
 }
 
@@ -49,12 +57,12 @@ pub mod pair {
     pub const ISTANBUL_PAIR_BASE: u64 = 45_000;
     pub const ISTANBUL: PrecompileWithAddress = PrecompileWithAddress(
         ADDRESS,
-        Precompile::Standard(|input, gas_limit| {
+        Precompile::Standard(|input, energy_limit| {
             run_pair(
                 input,
                 ISTANBUL_PAIR_PER_POINT,
                 ISTANBUL_PAIR_BASE,
-                gas_limit,
+                energy_limit,
             )
         }),
     );
@@ -63,12 +71,12 @@ pub mod pair {
     pub const BYZANTIUM_PAIR_BASE: u64 = 100_000;
     pub const BYZANTIUM: PrecompileWithAddress = PrecompileWithAddress(
         ADDRESS,
-        Precompile::Standard(|input, gas_limit| {
+        Precompile::Standard(|input, energy_limit| {
             run_pair(
                 input,
                 BYZANTIUM_PAIR_PER_POINT,
                 BYZANTIUM_PAIR_BASE,
-                gas_limit,
+                energy_limit,
             )
         }),
     );
@@ -120,9 +128,9 @@ pub fn new_g1_point(px: Fq, py: Fq) -> Result<G1, Error> {
     }
 }
 
-pub fn run_add(input: &[u8], gas_cost: u64, gas_limit: u64) -> PrecompileResult {
-    if gas_cost > gas_limit {
-        return Err(Error::OutOfGas);
+pub fn run_add(input: &[u8], energy_cost: u64, energy_limit: u64) -> PrecompileResult {
+    if energy_cost > energy_limit {
+        return Err(Error::OutOfEnergy);
     }
 
     let input = right_pad::<ADD_INPUT_LEN>(input);
@@ -135,12 +143,12 @@ pub fn run_add(input: &[u8], gas_cost: u64, gas_limit: u64) -> PrecompileResult 
         sum.x().to_big_endian(&mut output[..32]).unwrap();
         sum.y().to_big_endian(&mut output[32..]).unwrap();
     }
-    Ok((gas_cost, output.into()))
+    Ok((energy_cost, output.into()))
 }
 
-pub fn run_mul(input: &[u8], gas_cost: u64, gas_limit: u64) -> PrecompileResult {
-    if gas_cost > gas_limit {
-        return Err(Error::OutOfGas);
+pub fn run_mul(input: &[u8], energy_cost: u64, energy_limit: u64) -> PrecompileResult {
+    if energy_cost > energy_limit {
+        return Err(Error::OutOfEnergy);
     }
 
     let input = right_pad::<MUL_INPUT_LEN>(input);
@@ -155,18 +163,19 @@ pub fn run_mul(input: &[u8], gas_cost: u64, gas_limit: u64) -> PrecompileResult 
         mul.x().to_big_endian(&mut output[..32]).unwrap();
         mul.y().to_big_endian(&mut output[32..]).unwrap();
     }
-    Ok((gas_cost, output.into()))
+    Ok((energy_cost, output.into()))
 }
 
 pub fn run_pair(
     input: &[u8],
     pair_per_point_cost: u64,
     pair_base_cost: u64,
-    gas_limit: u64,
+    energy_limit: u64,
 ) -> PrecompileResult {
-    let gas_used = (input.len() / PAIR_ELEMENT_LEN) as u64 * pair_per_point_cost + pair_base_cost;
-    if gas_used > gas_limit {
-        return Err(Error::OutOfGas);
+    let energy_used =
+        (input.len() / PAIR_ELEMENT_LEN) as u64 * pair_per_point_cost + pair_base_cost;
+    if energy_used > energy_limit {
+        return Err(Error::OutOfEnergy);
     }
 
     if input.len() % PAIR_ELEMENT_LEN != 0 {
@@ -211,13 +220,13 @@ pub fn run_pair(
 
         mul == Gt::one()
     };
-    Ok((gas_used, bool_to_bytes32(success)))
+    Ok((energy_used, bool_to_bytes32(success)))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::bn128::add::BYZANTIUM_ADD_GAS_COST;
-    use crate::bn128::mul::BYZANTIUM_MUL_GAS_COST;
+    use crate::bn128::add::BYZANTIUM_ADD_ENERGY_COST;
+    use crate::bn128::mul::BYZANTIUM_MUL_ENERGY_COST;
     use crate::bn128::pair::{BYZANTIUM_PAIR_BASE, BYZANTIUM_PAIR_PER_POINT};
     use revm_primitives::hex;
 
@@ -240,7 +249,7 @@ mod tests {
         )
         .unwrap();
 
-        let (_, res) = run_add(&input, BYZANTIUM_ADD_GAS_COST, 500).unwrap();
+        let (_, res) = run_add(&input, BYZANTIUM_ADD_ENERGY_COST, 500).unwrap();
         assert_eq!(res, expected);
 
         // zero sum test
@@ -259,10 +268,10 @@ mod tests {
         )
         .unwrap();
 
-        let (_, res) = run_add(&input, BYZANTIUM_ADD_GAS_COST, 500).unwrap();
+        let (_, res) = run_add(&input, BYZANTIUM_ADD_ENERGY_COST, 500).unwrap();
         assert_eq!(res, expected);
 
-        // out of gas test
+        // out of energy test
         let input = hex::decode(
             "\
             0000000000000000000000000000000000000000000000000000000000000000\
@@ -272,9 +281,9 @@ mod tests {
         )
         .unwrap();
 
-        let res = run_add(&input, BYZANTIUM_ADD_GAS_COST, 499);
+        let res = run_add(&input, BYZANTIUM_ADD_ENERGY_COST, 499);
         println!("{:?}", res);
-        assert!(matches!(res, Err(Error::OutOfGas)));
+        assert!(matches!(res, Err(Error::OutOfEnergy)));
 
         // no input test
         let input = [0u8; 0];
@@ -285,7 +294,7 @@ mod tests {
         )
         .unwrap();
 
-        let (_, res) = run_add(&input, BYZANTIUM_ADD_GAS_COST, 500).unwrap();
+        let (_, res) = run_add(&input, BYZANTIUM_ADD_ENERGY_COST, 500).unwrap();
         assert_eq!(res, expected);
 
         // point not on curve fail
@@ -298,7 +307,7 @@ mod tests {
         )
         .unwrap();
 
-        let res = run_add(&input, BYZANTIUM_ADD_GAS_COST, 500);
+        let res = run_add(&input, BYZANTIUM_ADD_ENERGY_COST, 500);
         assert!(matches!(res, Err(Error::Bn128AffineGFailedToCreate)));
     }
 
@@ -318,10 +327,10 @@ mod tests {
         )
         .unwrap();
 
-        let (_, res) = run_mul(&input, BYZANTIUM_MUL_GAS_COST, 40_000).unwrap();
+        let (_, res) = run_mul(&input, BYZANTIUM_MUL_ENERGY_COST, 40_000).unwrap();
         assert_eq!(res, expected);
 
-        // out of gas test
+        // out of energy test
         let input = hex::decode(
             "\
             0000000000000000000000000000000000000000000000000000000000000000\
@@ -330,8 +339,8 @@ mod tests {
         )
         .unwrap();
 
-        let res = run_mul(&input, BYZANTIUM_MUL_GAS_COST, 39_999);
-        assert!(matches!(res, Err(Error::OutOfGas)));
+        let res = run_mul(&input, BYZANTIUM_MUL_ENERGY_COST, 39_999);
+        assert!(matches!(res, Err(Error::OutOfEnergy)));
 
         // zero multiplication test
         let input = hex::decode(
@@ -348,7 +357,7 @@ mod tests {
         )
         .unwrap();
 
-        let (_, res) = run_mul(&input, BYZANTIUM_MUL_GAS_COST, 40_000).unwrap();
+        let (_, res) = run_mul(&input, BYZANTIUM_MUL_ENERGY_COST, 40_000).unwrap();
         assert_eq!(res, expected);
 
         // no input test
@@ -360,7 +369,7 @@ mod tests {
         )
         .unwrap();
 
-        let (_, res) = run_mul(&input, BYZANTIUM_MUL_GAS_COST, 40_000).unwrap();
+        let (_, res) = run_mul(&input, BYZANTIUM_MUL_ENERGY_COST, 40_000).unwrap();
         assert_eq!(res, expected);
 
         // point not on curve fail
@@ -372,7 +381,7 @@ mod tests {
         )
         .unwrap();
 
-        let res = run_mul(&input, BYZANTIUM_MUL_GAS_COST, 40_000);
+        let res = run_mul(&input, BYZANTIUM_MUL_ENERGY_COST, 40_000);
         assert!(matches!(res, Err(Error::Bn128AffineGFailedToCreate)));
     }
 
@@ -407,7 +416,7 @@ mod tests {
         .unwrap();
         assert_eq!(res, expected);
 
-        // out of gas test
+        // out of energy test
         let input = hex::decode(
             "\
             1c76476f4def4bb94541d57ebba1193381ffa7aa76ada664dd31c16024c43f59\
@@ -431,7 +440,7 @@ mod tests {
             BYZANTIUM_PAIR_BASE,
             259_999,
         );
-        assert!(matches!(res, Err(Error::OutOfGas)));
+        assert!(matches!(res, Err(Error::OutOfEnergy)));
 
         // no input test
         let input = [0u8; 0];

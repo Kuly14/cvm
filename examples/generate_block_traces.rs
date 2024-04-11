@@ -87,7 +87,7 @@ async fn main() -> anyhow::Result<()> {
             local_fill!(b.coinbase, block.author);
             local_fill!(b.timestamp, Some(block.timestamp), U256::from_limbs);
             local_fill!(b.difficulty, Some(block.difficulty), U256::from_limbs);
-            local_fill!(b.gas_limit, Some(block.gas_limit), U256::from_limbs);
+            local_fill!(b.energy_limit, Some(block.gas_limit), U256::from_limbs);
             if let Some(base_fee) = block.base_fee_per_gas {
                 local_fill!(b.basefee, Some(base_fee), U256::from_limbs);
             }
@@ -113,17 +113,17 @@ async fn main() -> anyhow::Result<()> {
             .modify()
             .modify_tx_env(|etx| {
                 etx.caller = Address::from(tx.from.as_fixed_bytes());
-                etx.gas_limit = tx.gas.as_u64();
-                local_fill!(etx.gas_price, tx.gas_price, U256::from_limbs);
+                etx.energy_limit = tx.gas.as_u64();
+                local_fill!(etx.energy_price, tx.gas_price, U256::from_limbs);
                 local_fill!(etx.value, Some(tx.value), U256::from_limbs);
                 etx.data = tx.input.0.into();
-                let mut gas_priority_fee = U256::ZERO;
+                let mut energy_priority_fee = U256::ZERO;
                 local_fill!(
-                    gas_priority_fee,
+                    energy_priority_fee,
                     tx.max_priority_fee_per_gas,
                     U256::from_limbs
                 );
-                etx.gas_priority_fee = Some(gas_priority_fee);
+                etx.energy_priority_fee = Some(energy_priority_fee);
                 etx.network_id = Some(network_id);
                 etx.nonce = Some(tx.nonce.as_u64());
                 if let Some(access_list) = tx.access_list {

@@ -46,7 +46,7 @@ pub fn benchmark_crypto_precompiles(c: &mut Criterion) {
     .unwrap()
     .0;
 
-    println!("gas used by regular pairing call: {:?}", res);
+    println!("energy used by regular pairing call: {:?}", res);
 
     // === ECRECOVER ===
 
@@ -71,12 +71,12 @@ pub fn benchmark_crypto_precompiles(c: &mut Criterion) {
     message_and_signature[64..128].copy_from_slice(&data);
 
     let message_and_signature = Bytes::from(message_and_signature);
-    let gas = ec_recover_run(&message_and_signature, u64::MAX).unwrap();
-    println!("gas used by ecrecover precompile: {:?}", gas);
+    let energy = ec_recover_run(&message_and_signature, u64::MAX).unwrap();
+    println!("energy used by ecrecover precompile: {:?}", energy);
 
     // === POINT_EVALUATION ===
 
-    // now check kzg precompile gas
+    // now check kzg precompile energy
     let commitment = hex!("8f59a8d2a1a625a17f3fea0fe5eb8c896db3764f3185481bc22f91b4aaffcca25f26936857bc3a7c2539ea8ec3a952b7").to_vec();
     let mut versioned_hash = Sha256::digest(&commitment).to_vec();
     versioned_hash[0] = VERSIONED_HASH_VERSION_KZG;
@@ -86,10 +86,10 @@ pub fn benchmark_crypto_precompiles(c: &mut Criterion) {
 
     let kzg_input = [versioned_hash, z, y, commitment, proof].concat().into();
 
-    let gas = 50000;
+    let energy = 50000;
     let env = Env::default();
-    let (actual_gas, _actual_output) = run(&kzg_input, gas, &env).unwrap();
-    println!("gas used by kzg precompile: {:?}", actual_gas);
+    let (actual_energy, _actual_output) = run(&kzg_input, energy, &env).unwrap();
+    println!("energy used by kzg precompile: {:?}", actual_energy);
 
     group.bench_function(group_name("ecrecover precompile"), |b| {
         b.iter(|| {
@@ -113,7 +113,7 @@ pub fn benchmark_crypto_precompiles(c: &mut Criterion) {
 
     group.bench_function(group_name("kzg precompile"), |b| {
         b.iter(|| {
-            run(&kzg_input, gas, &env).unwrap();
+            run(&kzg_input, energy, &env).unwrap();
             black_box(())
         })
     });

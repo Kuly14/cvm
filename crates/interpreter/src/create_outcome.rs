@@ -1,4 +1,4 @@
-use crate::{Gas, InstructionResult, InterpreterResult};
+use crate::{Energy, InstructionResult, InterpreterResult};
 use revm_primitives::{Address, Bytes};
 
 /// Represents the outcome of a create operation in an interpreter.
@@ -54,16 +54,16 @@ impl CreateOutcome {
         &self.result.output
     }
 
-    /// Retrieves a reference to the `Gas` details from the `InterpreterResult`.
+    /// Retrieves a reference to the `Energy` details from the `InterpreterResult`.
     ///
-    /// This method provides access to the gas details of the operation, which includes
-    /// information about gas used, remaining, and refunded. It is essential for
-    /// understanding the gas consumption of the operation.
+    /// This method provides access to the energy details of the operation, which includes
+    /// information about energy used, remaining, and refunded. It is essential for
+    /// understanding the energy consumption of the operation.
     ///
     /// # Returns
     ///
-    /// A reference to the `Gas` details.
-    pub fn gas(&self) -> &Gas {
-        &self.result.gas
+    /// A reference to the `Energy` details.
+    pub fn energy(&self) -> &Energy {
+        &self.result.energy
     }
 }

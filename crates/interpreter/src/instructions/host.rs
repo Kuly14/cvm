@@ -1,9 +1,9 @@
 mod call_helpers;
 
-pub use call_helpers::{calc_call_gas, get_memory_input_and_out_ranges};
+pub use call_helpers::{calc_call_energy, get_memory_input_and_out_ranges};
 
 use crate::{
-    gas::{self, COLD_ACCOUNT_ACCESS_COST, WARM_STORAGE_READ_COST},
+    energy::{self, COLD_ACCOUNT_ACCESS_COST, WARM_STORAGE_READ_COST},
     interpreter::{Interpreter, InterpreterAction},
     primitives::{Bytes, Log, LogData, Spec, SpecId::*, B256, U256},
     CallContext, CallInputs, CallScheme, CreateInputs, CreateScheme, Host, InstructionResult,
@@ -19,11 +19,11 @@ pub fn balance<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
-    gas!(
+    energy!(
         interpreter,
         if SPEC::enabled(ISTANBUL) {
             // EIP-1884: Repricing for trie-size-dependent opcodes
-            gas::account_access_gas(SPEC::SPEC_ID, is_cold)
+            energy::account_access_energy(SPEC::SPEC_ID, is_cold)
         } else if SPEC::enabled(TANGERINE) {
             400
         } else {
@@ -36,7 +36,7 @@ pub fn balance<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host
 /// EIP-1884: Repricing for trie-size-dependent opcodes
 pub fn selfbalance<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     check!(interpreter, ISTANBUL);
-    gas!(interpreter, gas::LOW);
+    energy!(interpreter, energy::LOW);
     let Some((balance, _)) = host.balance(interpreter.contract.address) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
@@ -51,7 +51,7 @@ pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
         return;
     };
     if SPEC::enabled(BERLIN) {
-        gas!(
+        energy!(
             interpreter,
             if is_cold {
                 COLD_ACCOUNT_ACCESS_COST
@@ -60,9 +60,9 @@ pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
             }
         );
     } else if SPEC::enabled(TANGERINE) {
-        gas!(interpreter, 700);
+        energy!(interpreter, 700);
     } else {
-        gas!(interpreter, 20);
+        energy!(interpreter, 20);
     }
 
     push!(interpreter, U256::from(code.len()));
@@ -77,7 +77,7 @@ pub fn extcodehash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
         return;
     };
     if SPEC::enabled(BERLIN) {
-        gas!(
+        energy!(
             interpreter,
             if is_cold {
                 COLD_ACCOUNT_ACCESS_COST
@@ -86,9 +86,9 @@ pub fn extcodehash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
             }
         );
     } else if SPEC::enabled(ISTANBUL) {
-        gas!(interpreter, 700);
+        energy!(interpreter, 700);
     } else {
-        gas!(interpreter, 400);
+        energy!(interpreter, 400);
     }
     push_b256!(interpreter, code_hash);
 }
@@ -103,9 +103,9 @@ pub fn extcodecopy<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
     };
 
     let len = as_usize_or_fail!(interpreter, len_u256);
-    gas_or_fail!(
+    energy_or_fail!(
         interpreter,
-        gas::extcodecopy_cost(SPEC::SPEC_ID, len as u64, is_cold)
+        energy::extcodecopy_cost(SPEC::SPEC_ID, len as u64, is_cold)
     );
     if len == 0 {
         return;
@@ -121,7 +121,7 @@ pub fn extcodecopy<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
 }
 
 pub fn blockhash<H: Host + ?Sized>(interpreter: &mut Interpreter, host: &mut H) {
-    gas!(interpreter, gas::BLOCKHASH);
+    energy!(interpreter, energy::BLOCKHASH);
     pop_top!(interpreter, number);
 
     if let Some(diff) = host.env().block.number.checked_sub(*number) {
@@ -146,7 +146,7 @@ pub fn sload<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: 
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
-    gas!(interpreter, gas::sload_cost(SPEC::SPEC_ID, is_cold));
+    energy!(interpreter, energy::sload_cost(SPEC::SPEC_ID, is_cold));
     push!(interpreter, value);
 }
 
@@ -164,13 +164,13 @@ pub fn sstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host:
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
-    gas_or_fail!(interpreter, {
-        let remaining_gas = interpreter.gas.remaining();
-        gas::sstore_cost(SPEC::SPEC_ID, original, old, new, remaining_gas, is_cold)
+    energy_or_fail!(interpreter, {
+        let remaining_energy = interpreter.energy.remaining();
+        energy::sstore_cost(SPEC::SPEC_ID, original, old, new, remaining_energy, is_cold)
     });
     refund!(
         interpreter,
-        gas::sstore_refund(SPEC::SPEC_ID, original, old, new)
+        energy::sstore_refund(SPEC::SPEC_ID, original, old, new)
     );
 }
 
@@ -179,7 +179,7 @@ pub fn sstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host:
 pub fn tstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     check!(interpreter, CANCUN);
     check_staticcall!(interpreter);
-    gas!(interpreter, gas::WARM_STORAGE_READ_COST);
+    energy!(interpreter, energy::WARM_STORAGE_READ_COST);
 
     pop!(interpreter, index, value);
 
@@ -190,7 +190,7 @@ pub fn tstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host:
 /// Load value from transient storage
 pub fn tload<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     check!(interpreter, CANCUN);
-    gas!(interpreter, gas::WARM_STORAGE_READ_COST);
+    energy!(interpreter, energy::WARM_STORAGE_READ_COST);
 
     pop_top!(interpreter, index);
 
@@ -202,7 +202,7 @@ pub fn log<const N: usize, H: Host + ?Sized>(interpreter: &mut Interpreter, host
 
     pop!(interpreter, offset, len);
     let len = as_usize_or_fail!(interpreter, len);
-    gas_or_fail!(interpreter, gas::log_cost(N as u8, len as u64));
+    energy_or_fail!(interpreter, energy::log_cost(N as u8, len as u64));
     let data = if len == 0 {
         Bytes::new()
     } else {
@@ -241,9 +241,9 @@ pub fn selfdestruct<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter,
 
     // EIP-3529: Reduction in refunds
     if !SPEC::enabled(LONDON) && !res.previously_destroyed {
-        refund!(interpreter, gas::SELFDESTRUCT)
+        refund!(interpreter, energy::SELFDESTRUCT)
     }
-    gas!(interpreter, gas::selfdestruct_cost(SPEC::SPEC_ID, res));
+    energy!(interpreter, energy::selfdestruct_cost(SPEC::SPEC_ID, res));
 
     interpreter.instruction_result = InstructionResult::SelfDestruct;
 }
@@ -277,7 +277,7 @@ pub fn create<const IS_CREATE2: bool, H: Host + ?Sized, SPEC: Spec>(
                 interpreter.instruction_result = InstructionResult::CreateInitCodeSizeLimit;
                 return;
             }
-            gas!(interpreter, gas::initcode_cost(len as u64));
+            energy!(interpreter, energy::initcode_cost(len as u64));
         }
 
         let code_offset = as_usize_or_fail!(interpreter, code_offset);
@@ -288,21 +288,21 @@ pub fn create<const IS_CREATE2: bool, H: Host + ?Sized, SPEC: Spec>(
     // EIP-1014: Skinny CREATE2
     let scheme = if IS_CREATE2 {
         pop!(interpreter, salt);
-        gas_or_fail!(interpreter, gas::create2_cost(len as u64));
+        energy_or_fail!(interpreter, energy::create2_cost(len as u64));
         CreateScheme::Create2 { salt }
     } else {
-        gas!(interpreter, gas::CREATE);
+        energy!(interpreter, energy::CREATE);
         CreateScheme::Create
     };
 
-    let mut gas_limit = interpreter.gas().remaining();
+    let mut energy_limit = interpreter.energy().remaining();
 
-    // EIP-150: Gas cost changes for IO-heavy operations
+    // EIP-150: Energy cost changes for IO-heavy operations
     if SPEC::enabled(TANGERINE) {
-        // take remaining gas and deduce l64 part of it.
-        gas_limit -= gas_limit / 64
+        // take remaining energy and deduce l64 part of it.
+        energy_limit -= energy_limit / 64
     }
-    gas!(interpreter, gas_limit);
+    energy!(interpreter, energy_limit);
 
     // Call host to interact with target contract
     interpreter.next_action = InterpreterAction::Create {
@@ -311,7 +311,7 @@ pub fn create<const IS_CREATE2: bool, H: Host + ?Sized, SPEC: Spec>(
             scheme,
             value,
             init_code: code,
-            gas_limit,
+            energy_limit,
             network_id: host.env().cfg.network_id,
         }),
     };
@@ -319,10 +319,10 @@ pub fn create<const IS_CREATE2: bool, H: Host + ?Sized, SPEC: Spec>(
 }
 
 pub fn call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
-    pop!(interpreter, local_gas_limit);
+    pop!(interpreter, local_energy_limit);
     pop_address!(interpreter, to);
-    // max gas limit is not possible in real ethereum situation.
-    let local_gas_limit = u64::try_from(local_gas_limit).unwrap_or(u64::MAX);
+    // max energy limit is not possible in real ethereum situation.
+    let local_energy_limit = u64::try_from(local_energy_limit).unwrap_or(u64::MAX);
 
     pop!(interpreter, value);
     if interpreter.is_static && value != U256::ZERO {
@@ -334,23 +334,23 @@ pub fn call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &
         return;
     };
 
-    let Some(mut gas_limit) = calc_call_gas::<H, SPEC>(
+    let Some(mut energy_limit) = calc_call_energy::<H, SPEC>(
         interpreter,
         host,
         to,
         value != U256::ZERO,
-        local_gas_limit,
+        local_energy_limit,
         true,
         true,
     ) else {
         return;
     };
 
-    gas!(interpreter, gas_limit);
+    energy!(interpreter, energy_limit);
 
     // add call stipend if there is value to be transferred.
     if value != U256::ZERO {
-        gas_limit = gas_limit.saturating_add(gas::CALL_STIPEND);
+        energy_limit = energy_limit.saturating_add(energy::CALL_STIPEND);
     }
 
     // Call host to interact with target contract
@@ -363,7 +363,7 @@ pub fn call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &
                 value,
             },
             input,
-            gas_limit,
+            energy_limit,
             context: CallContext {
                 address: to,
                 caller: interpreter.contract.address,
@@ -379,33 +379,33 @@ pub fn call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &
 }
 
 pub fn call_code<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
-    pop!(interpreter, local_gas_limit);
+    pop!(interpreter, local_energy_limit);
     pop_address!(interpreter, to);
-    // max gas limit is not possible in real ethereum situation.
-    let local_gas_limit = u64::try_from(local_gas_limit).unwrap_or(u64::MAX);
+    // max energy limit is not possible in real ethereum situation.
+    let local_energy_limit = u64::try_from(local_energy_limit).unwrap_or(u64::MAX);
 
     pop!(interpreter, value);
     let Some((input, return_memory_offset)) = get_memory_input_and_out_ranges(interpreter) else {
         return;
     };
 
-    let Some(mut gas_limit) = calc_call_gas::<H, SPEC>(
+    let Some(mut energy_limit) = calc_call_energy::<H, SPEC>(
         interpreter,
         host,
         to,
         value != U256::ZERO,
-        local_gas_limit,
+        local_energy_limit,
         true,
         false,
     ) else {
         return;
     };
 
-    gas!(interpreter, gas_limit);
+    energy!(interpreter, energy_limit);
 
     // add call stipend if there is value to be transferred.
     if value != U256::ZERO {
-        gas_limit = gas_limit.saturating_add(gas::CALL_STIPEND);
+        energy_limit = energy_limit.saturating_add(energy::CALL_STIPEND);
     }
 
     // Call host to interact with target contract
@@ -418,7 +418,7 @@ pub fn call_code<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
                 value,
             },
             input,
-            gas_limit,
+            energy_limit,
             context: CallContext {
                 address: interpreter.contract.address,
                 caller: interpreter.contract.address,
@@ -435,22 +435,28 @@ pub fn call_code<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
 
 pub fn delegate_call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     check!(interpreter, HOMESTEAD);
-    pop!(interpreter, local_gas_limit);
+    pop!(interpreter, local_energy_limit);
     pop_address!(interpreter, to);
-    // max gas limit is not possible in real ethereum situation.
-    let local_gas_limit = u64::try_from(local_gas_limit).unwrap_or(u64::MAX);
+    // max energy limit is not possible in real ethereum situation.
+    let local_energy_limit = u64::try_from(local_energy_limit).unwrap_or(u64::MAX);
 
     let Some((input, return_memory_offset)) = get_memory_input_and_out_ranges(interpreter) else {
         return;
     };
 
-    let Some(gas_limit) =
-        calc_call_gas::<H, SPEC>(interpreter, host, to, false, local_gas_limit, false, false)
-    else {
+    let Some(energy_limit) = calc_call_energy::<H, SPEC>(
+        interpreter,
+        host,
+        to,
+        false,
+        local_energy_limit,
+        false,
+        false,
+    ) else {
         return;
     };
 
-    gas!(interpreter, gas_limit);
+    energy!(interpreter, energy_limit);
 
     // Call host to interact with target contract
     interpreter.next_action = InterpreterAction::Call {
@@ -464,7 +470,7 @@ pub fn delegate_call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter
                 value: U256::ZERO,
             },
             input,
-            gas_limit,
+            energy_limit,
             context: CallContext {
                 address: interpreter.contract.address,
                 caller: interpreter.contract.caller,
@@ -481,22 +487,28 @@ pub fn delegate_call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter
 
 pub fn static_call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     check!(interpreter, BYZANTIUM);
-    pop!(interpreter, local_gas_limit);
+    pop!(interpreter, local_energy_limit);
     pop_address!(interpreter, to);
-    // max gas limit is not possible in real ethereum situation.
-    let local_gas_limit = u64::try_from(local_gas_limit).unwrap_or(u64::MAX);
+    // max energy limit is not possible in real ethereum situation.
+    let local_energy_limit = u64::try_from(local_energy_limit).unwrap_or(u64::MAX);
 
     let value = U256::ZERO;
     let Some((input, return_memory_offset)) = get_memory_input_and_out_ranges(interpreter) else {
         return;
     };
 
-    let Some(gas_limit) =
-        calc_call_gas::<H, SPEC>(interpreter, host, to, false, local_gas_limit, false, true)
-    else {
+    let Some(energy_limit) = calc_call_energy::<H, SPEC>(
+        interpreter,
+        host,
+        to,
+        false,
+        local_energy_limit,
+        false,
+        true,
+    ) else {
         return;
     };
-    gas!(interpreter, gas_limit);
+    energy!(interpreter, energy_limit);
 
     // Call host to interact with target contract
     interpreter.next_action = InterpreterAction::Call {
@@ -510,7 +522,7 @@ pub fn static_call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
                 value: U256::ZERO,
             },
             input,
-            gas_limit,
+            energy_limit,
             context: CallContext {
                 address: to,
                 caller: interpreter.contract.address,

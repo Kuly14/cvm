@@ -1,17 +1,17 @@
 use crate::{
-    gas,
+    energy,
     primitives::{Bytes, Spec, U256},
     Host, InstructionResult, Interpreter, InterpreterResult,
 };
 
 pub fn jump<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::MID);
+    energy!(interpreter, energy::MID);
     pop!(interpreter, dest);
     jump_inner(interpreter, dest);
 }
 
 pub fn jumpi<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::HIGH);
+    energy!(interpreter, energy::HIGH);
     pop!(interpreter, dest, value);
     if value != U256::ZERO {
         jump_inner(interpreter, dest);
@@ -30,19 +30,19 @@ fn jump_inner(interpreter: &mut Interpreter, dest: U256) {
 }
 
 pub fn jumpdest<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::JUMPDEST);
+    energy!(interpreter, energy::JUMPDEST);
 }
 
 pub fn pc<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::BASE);
+    energy!(interpreter, energy::BASE);
     // - 1 because we have already advanced the instruction pointer in `Interpreter::step`
     push!(interpreter, U256::from(interpreter.program_counter() - 1));
 }
 
 #[inline(always)]
 fn return_inner(interpreter: &mut Interpreter, instruction_result: InstructionResult) {
-    // zero gas cost
-    // gas!(interpreter, gas::ZERO);
+    // zero energy cost
+    // energy!(interpreter, energy::ZERO);
     pop!(interpreter, offset, len);
     let len = as_usize_or_fail!(interpreter, len);
     // important: offset must be ignored if len is zeros
@@ -57,7 +57,7 @@ fn return_inner(interpreter: &mut Interpreter, instruction_result: InstructionRe
     interpreter.next_action = crate::InterpreterAction::Return {
         result: InterpreterResult {
             output,
-            gas: interpreter.gas,
+            energy: interpreter.energy,
             result: instruction_result,
         },
     };

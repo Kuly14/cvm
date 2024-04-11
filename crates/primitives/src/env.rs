@@ -3,8 +3,8 @@ pub mod handler_cfg;
 pub use handler_cfg::{CfgEnvWithHandlerCfg, EnvWithHandlerCfg, HandlerCfg};
 
 use crate::{
-    calc_blob_gasprice, Account, Address, Bytes, InvalidHeader, InvalidTransaction, Spec, SpecId,
-    B256, GAS_PER_BLOB, MAX_BLOB_NUMBER_PER_BLOCK, MAX_INITCODE_SIZE, SHA_EMPTY, U256,
+    calc_blob_energyprice, Account, Address, Bytes, InvalidHeader, InvalidTransaction, Spec,
+    SpecId, B256, ENERGY_PER_BLOB, MAX_BLOB_NUMBER_PER_BLOCK, MAX_INITCODE_SIZE, SHA_EMPTY, U256,
     VERSIONED_HASH_VERSION_KZG,
 };
 use core::cmp::{min, Ordering};
@@ -35,13 +35,13 @@ impl Env {
         Box::new(Self { cfg, block, tx })
     }
 
-    /// Calculates the effective gas price of the transaction.
+    /// Calculates the effective energy price of the transaction.
     #[inline]
-    pub fn effective_gas_price(&self) -> U256 {
-        if let Some(priority_fee) = self.tx.gas_priority_fee {
-            min(self.tx.gas_price, self.block.basefee + priority_fee)
+    pub fn effective_energy_price(&self) -> U256 {
+        if let Some(priority_fee) = self.tx.energy_priority_fee {
+            min(self.tx.energy_price, self.block.basefee + priority_fee)
         } else {
-            self.tx.gas_price
+            self.tx.energy_price
         }
     }
 
@@ -52,22 +52,25 @@ impl Env {
     /// [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
     #[inline]
     pub fn calc_data_fee(&self) -> Option<U256> {
-        self.block.get_blob_gasprice().map(|blob_gas_price| {
-            U256::from(blob_gas_price).saturating_mul(U256::from(self.tx.get_total_blob_gas()))
+        self.block.get_blob_energyprice().map(|blob_energy_price| {
+            U256::from(blob_energy_price)
+                .saturating_mul(U256::from(self.tx.get_total_blob_energy()))
         })
     }
 
     /// Calculates the maximum [EIP-4844] `data_fee` of the transaction.
     ///
     /// This is used for ensuring that the user has at least enough funds to pay the
-    /// `max_fee_per_blob_gas * total_blob_gas`, on top of regular gas costs.
+    /// `max_fee_per_blob_energy * total_blob_energy`, on top of regular energy costs.
     ///
     /// See EIP-4844:
     /// <https://github.com/ethereum/EIPs/blob/master/EIPS/eip-4844.md#execution-layer-validation>
     pub fn calc_max_data_fee(&self) -> Option<U256> {
-        self.tx.max_fee_per_blob_gas.map(|max_fee_per_blob_gas| {
-            max_fee_per_blob_gas.saturating_mul(U256::from(self.tx.get_total_blob_gas()))
-        })
+        self.tx
+            .max_fee_per_blob_energy
+            .map(|max_fee_per_blob_energy| {
+                max_fee_per_blob_energy.saturating_mul(U256::from(self.tx.get_total_blob_energy()))
+            })
     }
 
     /// Validate the block environment.
@@ -77,40 +80,40 @@ impl Env {
         if SPEC::enabled(SpecId::MERGE) && self.block.prevrandao.is_none() {
             return Err(InvalidHeader::PrevrandaoNotSet);
         }
-        // `excess_blob_gas` is required for Cancun
-        if SPEC::enabled(SpecId::CANCUN) && self.block.blob_excess_gas_and_price.is_none() {
-            return Err(InvalidHeader::ExcessBlobGasNotSet);
+        // `excess_blob_energy` is required for Cancun
+        if SPEC::enabled(SpecId::CANCUN) && self.block.blob_excess_energy_and_price.is_none() {
+            return Err(InvalidHeader::ExcessBlobEnergyNotSet);
         }
         Ok(())
     }
 
     /// Validate transaction data that is set inside ENV and return error if something is wrong.
     ///
-    /// Return initial spend gas (Gas needed to execute transaction).
+    /// Return initial spend energy (Energy needed to execute transaction).
     #[inline]
     pub fn validate_tx<SPEC: Spec>(&self) -> Result<(), InvalidTransaction> {
         // BASEFEE tx check
         if SPEC::enabled(SpecId::LONDON) {
-            if let Some(priority_fee) = self.tx.gas_priority_fee {
-                if priority_fee > self.tx.gas_price {
-                    // or gas_max_fee for eip1559
+            if let Some(priority_fee) = self.tx.energy_priority_fee {
+                if priority_fee > self.tx.energy_price {
+                    // or energy_max_fee for eip1559
                     return Err(InvalidTransaction::PriorityFeeGreaterThanMaxFee);
                 }
             }
 
             // check minimal cost against basefee
             if !self.cfg.is_base_fee_check_disabled()
-                && self.effective_gas_price() < self.block.basefee
+                && self.effective_energy_price() < self.block.basefee
             {
-                return Err(InvalidTransaction::GasPriceLessThanBasefee);
+                return Err(InvalidTransaction::EnergyPriceLessThanBasefee);
             }
         }
 
-        // Check if gas_limit is more than block_gas_limit
-        if !self.cfg.is_block_gas_limit_disabled()
-            && U256::from(self.tx.gas_limit) > self.block.gas_limit
+        // Check if energy_limit is more than block_energy_limit
+        if !self.cfg.is_block_energy_limit_disabled()
+            && U256::from(self.tx.energy_limit) > self.block.energy_limit
         {
-            return Err(InvalidTransaction::CallerGasLimitMoreThanBlock);
+            return Err(InvalidTransaction::CallerEnergyLimitMoreThanBlock);
         }
 
         // EIP-3860: Limit and meter initcode
@@ -137,15 +140,15 @@ impl Env {
             return Err(InvalidTransaction::AccessListNotSupported);
         }
 
-        // - For CANCUN and later, check that the gas price is not more than the tx max
-        // - For before CANCUN, check that `blob_hashes` and `max_fee_per_blob_gas` are empty / not set
+        // - For CANCUN and later, check that the energy price is not more than the tx max
+        // - For before CANCUN, check that `blob_hashes` and `max_fee_per_blob_energy` are empty / not set
         if SPEC::enabled(SpecId::CANCUN) {
-            // Presence of max_fee_per_blob_gas means that this is blob transaction.
-            if let Some(max) = self.tx.max_fee_per_blob_gas {
-                // ensure that the user was willing to at least pay the current blob gasprice
-                let price = self.block.get_blob_gasprice().expect("already checked");
+            // Presence of max_fee_per_blob_energy means that this is blob transaction.
+            if let Some(max) = self.tx.max_fee_per_blob_energy {
+                // ensure that the user was willing to at least pay the current blob energyprice
+                let price = self.block.get_blob_energyprice().expect("already checked");
                 if U256::from(price) > max {
-                    return Err(InvalidTransaction::BlobGasPriceGreaterThanMax);
+                    return Err(InvalidTransaction::BlobEnergyPriceGreaterThanMax);
                 }
 
                 // there must be at least one blob
@@ -168,8 +171,8 @@ impl Env {
                     }
                 }
 
-                // ensure the total blob gas spent is at most equal to the limit
-                // assert blob_gas_used <= MAX_BLOB_GAS_PER_BLOCK
+                // ensure the total blob energy spent is at most equal to the limit
+                // assert blob_energy_used <= MAX_BLOB_ENERGY_PER_BLOCK
                 if self.tx.blob_hashes.len() > MAX_BLOB_NUMBER_PER_BLOCK as usize {
                     return Err(InvalidTransaction::TooManyBlobs);
                 }
@@ -178,8 +181,8 @@ impl Env {
             if !self.tx.blob_hashes.is_empty() {
                 return Err(InvalidTransaction::BlobVersionedHashesNotSupported);
             }
-            if self.tx.max_fee_per_blob_gas.is_some() {
-                return Err(InvalidTransaction::MaxFeePerBlobGasNotSupported);
+            if self.tx.max_fee_per_blob_energy.is_some() {
+                return Err(InvalidTransaction::MaxFeePerBlobEnergyNotSupported);
             }
         }
 
@@ -213,9 +216,9 @@ impl Env {
             }
         }
 
-        let mut balance_check = U256::from(self.tx.gas_limit)
-            .checked_mul(self.tx.gas_price)
-            .and_then(|gas_cost| gas_cost.checked_add(self.tx.value))
+        let mut balance_check = U256::from(self.tx.energy_limit)
+            .checked_mul(self.tx.energy_price)
+            .and_then(|energy_cost| energy_cost.checked_add(self.tx.value))
             .ok_or(InvalidTransaction::OverflowPaymentInTransaction)?;
 
         if SPEC::enabled(SpecId::CANCUN) {
@@ -226,7 +229,7 @@ impl Env {
                 .ok_or(InvalidTransaction::OverflowPaymentInTransaction)?;
         }
 
-        // Check if account has enough balance for gas_limit*gas_price and value transfer.
+        // Check if account has enough balance for energy_limit*energy_price and value transfer.
         // Transfer will be done inside `*_inner` functions.
         if balance_check > account.info.balance {
             if self.cfg.is_balance_check_disabled() {
@@ -264,9 +267,9 @@ pub struct CfgEnv {
     /// If some it will effects EIP-170: Contract code size limit. Useful to increase this because of tests.
     /// By default it is 0x6000 (~25kb).
     pub limit_contract_code_size: Option<usize>,
-    /// A hard memory limit in bytes beyond which [crate::result::OutOfGasError::Memory] cannot be resized.
+    /// A hard memory limit in bytes beyond which [crate::result::OutOfEnergyError::Memory] cannot be resized.
     ///
-    /// In cases where the gas limit may be extraordinarily high, it is recommended to set this to
+    /// In cases where the energy limit may be extraordinarily high, it is recommended to set this to
     /// a sane value to prevent memory allocation panics. Defaults to `2^32 - 1` bytes per
     /// EIP-1985.
     #[cfg(feature = "memory_limit")]
@@ -274,23 +277,23 @@ pub struct CfgEnv {
     /// Skip balance checks if true. Adds transaction cost to balance to ensure execution doesn't fail.
     #[cfg(feature = "optional_balance_check")]
     pub disable_balance_check: bool,
-    /// There are use cases where it's allowed to provide a gas limit that's higher than a block's gas limit. To that
-    /// end, you can disable the block gas limit validation.
+    /// There are use cases where it's allowed to provide a energy limit that's higher than a block's energy limit. To that
+    /// end, you can disable the block energy limit validation.
     /// By default, it is set to `false`.
-    #[cfg(feature = "optional_block_gas_limit")]
-    pub disable_block_gas_limit: bool,
+    #[cfg(feature = "optional_block_energy_limit")]
+    pub disable_block_energy_limit: bool,
     /// EIP-3607 rejects transactions from senders with deployed code. In development, it can be desirable to simulate
     /// calls from contracts, which this setting allows.
     /// By default, it is set to `false`.
     #[cfg(feature = "optional_eip3607")]
     pub disable_eip3607: bool,
-    /// Disables all gas refunds. This is useful when using chains that have gas refunds disabled e.g. Avalanche.
-    /// Reasoning behind removing gas refunds can be found in EIP-3298.
+    /// Disables all energy refunds. This is useful when using chains that have energy refunds disabled e.g. Avalanche.
+    /// Reasoning behind removing energy refunds can be found in EIP-3298.
     /// By default, it is set to `false`.
-    #[cfg(feature = "optional_gas_refund")]
-    pub disable_gas_refund: bool,
+    #[cfg(feature = "optional_energy_refund")]
+    pub disable_energy_refund: bool,
     /// Disables base fee checks for EIP-1559 transactions.
-    /// This is useful for testing method calls with zero gas price.
+    /// This is useful for testing method calls with zero energy price.
     /// By default, it is set to `false`.
     #[cfg(feature = "optional_no_base_fee")]
     pub disable_base_fee: bool,
@@ -321,13 +324,13 @@ impl CfgEnv {
         false
     }
 
-    #[cfg(feature = "optional_gas_refund")]
-    pub fn is_gas_refund_disabled(&self) -> bool {
-        self.disable_gas_refund
+    #[cfg(feature = "optional_energy_refund")]
+    pub fn is_energy_refund_disabled(&self) -> bool {
+        self.disable_energy_refund
     }
 
-    #[cfg(not(feature = "optional_gas_refund"))]
-    pub fn is_gas_refund_disabled(&self) -> bool {
+    #[cfg(not(feature = "optional_energy_refund"))]
+    pub fn is_energy_refund_disabled(&self) -> bool {
         false
     }
 
@@ -341,13 +344,13 @@ impl CfgEnv {
         false
     }
 
-    #[cfg(feature = "optional_block_gas_limit")]
-    pub fn is_block_gas_limit_disabled(&self) -> bool {
-        self.disable_block_gas_limit
+    #[cfg(feature = "optional_block_energy_limit")]
+    pub fn is_block_energy_limit_disabled(&self) -> bool {
+        self.disable_block_energy_limit
     }
 
-    #[cfg(not(feature = "optional_block_gas_limit"))]
-    pub fn is_block_gas_limit_disabled(&self) -> bool {
+    #[cfg(not(feature = "optional_block_energy_limit"))]
+    pub fn is_block_energy_limit_disabled(&self) -> bool {
         false
     }
 
@@ -374,12 +377,12 @@ impl Default for CfgEnv {
             memory_limit: (1 << 32) - 1,
             #[cfg(feature = "optional_balance_check")]
             disable_balance_check: false,
-            #[cfg(feature = "optional_block_gas_limit")]
-            disable_block_gas_limit: false,
+            #[cfg(feature = "optional_block_energy_limit")]
+            disable_block_energy_limit: false,
             #[cfg(feature = "optional_eip3607")]
             disable_eip3607: false,
-            #[cfg(feature = "optional_gas_refund")]
-            disable_gas_refund: false,
+            #[cfg(feature = "optional_energy_refund")]
+            disable_energy_refund: false,
             #[cfg(feature = "optional_no_base_fee")]
             disable_base_fee: false,
             #[cfg(feature = "optional_beneficiary_reward")]
@@ -396,14 +399,14 @@ pub struct BlockEnv {
     pub number: U256,
     /// Coinbase or miner or address that created and signed the block.
     ///
-    /// This is the receiver address of all the gas spent in the block.
+    /// This is the receiver address of all the energy spent in the block.
     pub coinbase: Address,
 
     /// The timestamp of the block in seconds since the UNIX epoch.
     pub timestamp: U256,
-    /// The gas limit of the block.
-    pub gas_limit: U256,
-    /// The base fee per gas, added in the London upgrade with [EIP-1559].
+    /// The energy limit of the block.
+    pub energy_limit: U256,
+    /// The base fee per energy, added in the London upgrade with [EIP-1559].
     ///
     /// [EIP-1559]: https://eips.ethereum.org/EIPS/eip-1559
     pub basefee: U256,
@@ -419,44 +422,44 @@ pub struct BlockEnv {
     ///
     /// [EIP-4399]: https://eips.ethereum.org/EIPS/eip-4399
     pub prevrandao: Option<B256>,
-    /// Excess blob gas and blob gasprice.
-    /// See also [`crate::calc_excess_blob_gas`]
-    /// and [`calc_blob_gasprice`].
+    /// Excess blob energy and blob energyprice.
+    /// See also [`crate::calc_excess_blob_energy`]
+    /// and [`calc_blob_energyprice`].
     ///
     /// Incorporated as part of the Cancun upgrade via [EIP-4844].
     ///
     /// [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
-    pub blob_excess_gas_and_price: Option<BlobExcessGasAndPrice>,
+    pub blob_excess_energy_and_price: Option<BlobExcessEnergyAndPrice>,
 }
 
 impl BlockEnv {
-    /// Takes `blob_excess_gas` saves it inside env
-    /// and calculates `blob_fee` with [`BlobExcessGasAndPrice`].
-    pub fn set_blob_excess_gas_and_price(&mut self, excess_blob_gas: u64) {
-        self.blob_excess_gas_and_price = Some(BlobExcessGasAndPrice::new(excess_blob_gas));
+    /// Takes `blob_excess_energy` saves it inside env
+    /// and calculates `blob_fee` with [`BlobExcessEnergyAndPrice`].
+    pub fn set_blob_excess_energy_and_price(&mut self, excess_blob_energy: u64) {
+        self.blob_excess_energy_and_price = Some(BlobExcessEnergyAndPrice::new(excess_blob_energy));
     }
-    /// See [EIP-4844] and [`crate::calc_blob_gasprice`].
+    /// See [EIP-4844] and [`crate::calc_blob_energyprice`].
     ///
     /// Returns `None` if `Cancun` is not enabled. This is enforced in [`Env::validate_block_env`].
     ///
     /// [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
     #[inline]
-    pub fn get_blob_gasprice(&self) -> Option<u128> {
-        self.blob_excess_gas_and_price
+    pub fn get_blob_energyprice(&self) -> Option<u128> {
+        self.blob_excess_energy_and_price
             .as_ref()
-            .map(|a| a.blob_gasprice)
+            .map(|a| a.blob_energyprice)
     }
 
-    /// Return `blob_excess_gas` header field. See [EIP-4844].
+    /// Return `blob_excess_energy` header field. See [EIP-4844].
     ///
     /// Returns `None` if `Cancun` is not enabled. This is enforced in [`Env::validate_block_env`].
     ///
     /// [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
     #[inline]
-    pub fn get_blob_excess_gas(&self) -> Option<u64> {
-        self.blob_excess_gas_and_price
+    pub fn get_blob_excess_energy(&self) -> Option<u64> {
+        self.blob_excess_energy_and_price
             .as_ref()
-            .map(|a| a.excess_blob_gas)
+            .map(|a| a.excess_blob_energy)
     }
 
     /// Clears environment and resets fields to default values.
@@ -472,11 +475,11 @@ impl Default for BlockEnv {
             number: U256::ZERO,
             coinbase: Address::ZERO,
             timestamp: U256::from(1),
-            gas_limit: U256::MAX,
+            energy_limit: U256::MAX,
             basefee: U256::ZERO,
             difficulty: U256::ZERO,
             prevrandao: Some(B256::ZERO),
-            blob_excess_gas_and_price: Some(BlobExcessGasAndPrice::new(0)),
+            blob_excess_energy_and_price: Some(BlobExcessEnergyAndPrice::new(0)),
         }
     }
 }
@@ -487,10 +490,10 @@ impl Default for BlockEnv {
 pub struct TxEnv {
     /// Caller aka Author aka transaction signer.
     pub caller: Address,
-    /// The gas limit of the transaction.
-    pub gas_limit: u64,
-    /// The gas price of the transaction.
-    pub gas_price: U256,
+    /// The energy limit of the transaction.
+    pub energy_limit: u64,
+    /// The energy price of the transaction.
+    pub energy_price: U256,
     /// The destination of the transaction.
     pub transact_to: TransactTo,
     /// The value sent to `transact_to`.
@@ -516,27 +519,27 @@ pub struct TxEnv {
     /// [EIP-2930]: https://eips.ethereum.org/EIPS/eip-2930
     pub access_list: Vec<(Address, Vec<U256>)>,
 
-    /// The priority fee per gas.
+    /// The priority fee per energy.
     ///
     /// Incorporated as part of the London upgrade via [EIP-1559].
     ///
     /// [EIP-1559]: https://eips.ethereum.org/EIPS/eip-1559
-    pub gas_priority_fee: Option<U256>,
+    pub energy_priority_fee: Option<U256>,
 
     /// The list of blob versioned hashes. Per EIP there should be at least
-    /// one blob present if [`Self::max_fee_per_blob_gas`] is `Some`.
+    /// one blob present if [`Self::max_fee_per_blob_energy`] is `Some`.
     ///
     /// Incorporated as part of the Cancun upgrade via [EIP-4844].
     ///
     /// [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
     pub blob_hashes: Vec<B256>,
 
-    /// The max fee per blob gas.
+    /// The max fee per blob energy.
     ///
     /// Incorporated as part of the Cancun upgrade via [EIP-4844].
     ///
     /// [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
-    pub max_fee_per_blob_gas: Option<U256>,
+    pub max_fee_per_blob_energy: Option<U256>,
 
     #[cfg_attr(feature = "serde", serde(flatten))]
     #[cfg(feature = "optimism")]
@@ -548,8 +551,8 @@ impl TxEnv {
     ///
     /// [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
     #[inline]
-    pub fn get_total_blob_gas(&self) -> u64 {
-        GAS_PER_BLOB * self.blob_hashes.len() as u64
+    pub fn get_total_blob_energy(&self) -> u64 {
+        ENERGY_PER_BLOB * self.blob_hashes.len() as u64
     }
 
     /// Clears environment and resets fields to default values.
@@ -563,9 +566,9 @@ impl Default for TxEnv {
     fn default() -> Self {
         Self {
             caller: Address::ZERO,
-            gas_limit: u64::MAX,
-            gas_price: U256::ZERO,
-            gas_priority_fee: None,
+            energy_limit: u64::MAX,
+            energy_price: U256::ZERO,
+            energy_priority_fee: None,
             transact_to: TransactTo::Call(Address::ZERO), // will do nothing
             value: U256::ZERO,
             data: Bytes::new(),
@@ -573,34 +576,34 @@ impl Default for TxEnv {
             nonce: None,
             access_list: Vec::new(),
             blob_hashes: Vec::new(),
-            max_fee_per_blob_gas: None,
+            max_fee_per_blob_energy: None,
             #[cfg(feature = "optimism")]
             optimism: OptimismFields::default(),
         }
     }
 }
 
-/// Structure holding block blob excess gas and it calculates blob fee.
+/// Structure holding block blob excess energy and it calculates blob fee.
 ///
 /// Incorporated as part of the Cancun upgrade via [EIP-4844].
 ///
 /// [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct BlobExcessGasAndPrice {
-    /// The excess blob gas of the block.
-    pub excess_blob_gas: u64,
-    /// The calculated blob gas price based on the `excess_blob_gas`, See [calc_blob_gasprice]
-    pub blob_gasprice: u128,
+pub struct BlobExcessEnergyAndPrice {
+    /// The excess blob energy of the block.
+    pub excess_blob_energy: u64,
+    /// The calculated blob energy price based on the `excess_blob_energy`, See [calc_blob_energyprice]
+    pub blob_energyprice: u128,
 }
 
-impl BlobExcessGasAndPrice {
-    /// Creates a new instance by calculating the blob gas price with [`calc_blob_gasprice`].
-    pub fn new(excess_blob_gas: u64) -> Self {
-        let blob_gasprice = calc_blob_gasprice(excess_blob_gas);
+impl BlobExcessEnergyAndPrice {
+    /// Creates a new instance by calculating the blob energy price with [`calc_blob_energyprice`].
+    pub fn new(excess_blob_energy: u64) -> Self {
+        let blob_energyprice = calc_blob_energyprice(excess_blob_energy);
         Self {
-            excess_blob_gas,
-            blob_gasprice,
+            excess_blob_energy,
+            blob_energyprice,
         }
     }
 }

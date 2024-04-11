@@ -23,43 +23,43 @@ macro_rules! check {
     };
 }
 
-/// Records a `gas` cost and fails the instruction if it would exceed the available gas.
+/// Records a `energy` cost and fails the instruction if it would exceed the available energy.
 #[macro_export]
-macro_rules! gas {
-    ($interp:expr, $gas:expr) => {
-        $crate::gas!($interp, $gas, ())
+macro_rules! energy {
+    ($interp:expr, $energy:expr) => {
+        $crate::energy!($interp, $energy, ())
     };
-    ($interp:expr, $gas:expr, $ret:expr) => {
-        if !$interp.gas.record_cost($gas) {
-            $interp.instruction_result = $crate::InstructionResult::OutOfGas;
+    ($interp:expr, $energy:expr, $ret:expr) => {
+        if !$interp.energy.record_cost($energy) {
+            $interp.instruction_result = $crate::InstructionResult::OutOfEnergy;
             return $ret;
         }
     };
 }
 
-/// Records a `gas` refund.
+/// Records a `energy` refund.
 #[macro_export]
 macro_rules! refund {
-    ($interp:expr, $gas:expr) => {
-        $interp.gas.record_refund($gas)
+    ($interp:expr, $energy:expr) => {
+        $interp.energy.record_refund($energy)
     };
 }
 
-/// Same as [`gas!`], but with `gas` as an option.
+/// Same as [`energy!`], but with `energy` as an option.
 #[macro_export]
-macro_rules! gas_or_fail {
-    ($interp:expr, $gas:expr) => {
-        match $gas {
-            Some(gas_used) => $crate::gas!($interp, gas_used),
+macro_rules! energy_or_fail {
+    ($interp:expr, $energy:expr) => {
+        match $energy {
+            Some(energy_used) => $crate::energy!($interp, energy_used),
             None => {
-                $interp.instruction_result = $crate::InstructionResult::OutOfGas;
+                $interp.instruction_result = $crate::InstructionResult::OutOfEnergy;
                 return;
             }
         }
     };
 }
 
-/// Resizes the interpreter memory if necessary. Fails the instruction if the memory or gas limit
+/// Resizes the interpreter memory if necessary. Fails the instruction if the memory or energy limit
 /// is exceeded.
 #[macro_export]
 macro_rules! resize_memory {
@@ -78,11 +78,11 @@ macro_rules! resize_memory {
                 return $ret;
             }
 
-            // Gas is calculated in evm words (256 bits).
+            // Energy is calculated in evm words (256 bits).
             let words_num = rounded_size / 32;
             if !$interp
-                .gas
-                .record_memory($crate::gas::memory_gas(words_num))
+                .energy
+                .record_memory($crate::energy::memory_energy(words_num))
             {
                 $interp.instruction_result = $crate::InstructionResult::MemoryLimitOOG;
                 return $ret;

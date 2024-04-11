@@ -1,12 +1,12 @@
 use crate::{
-    gas,
+    energy,
     primitives::{Spec, U256},
     Host, Interpreter,
 };
 use core::cmp::max;
 
 pub fn mload<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::VERYLOW);
+    energy!(interpreter, energy::VERYLOW);
     pop!(interpreter, index);
     let index = as_usize_or_fail!(interpreter, index);
     resize_memory!(interpreter, index, 32);
@@ -14,7 +14,7 @@ pub fn mload<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
 }
 
 pub fn mstore<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::VERYLOW);
+    energy!(interpreter, energy::VERYLOW);
     pop!(interpreter, index, value);
     let index = as_usize_or_fail!(interpreter, index);
     resize_memory!(interpreter, index, 32);
@@ -22,7 +22,7 @@ pub fn mstore<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
 }
 
 pub fn mstore8<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::VERYLOW);
+    energy!(interpreter, energy::VERYLOW);
     pop!(interpreter, index, value);
     let index = as_usize_or_fail!(interpreter, index);
     resize_memory!(interpreter, index, 1);
@@ -30,7 +30,7 @@ pub fn mstore8<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
 }
 
 pub fn msize<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
-    gas!(interpreter, gas::BASE);
+    energy!(interpreter, energy::BASE);
     push!(interpreter, U256::from(interpreter.shared_memory.len()));
 }
 
@@ -41,8 +41,8 @@ pub fn mcopy<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, _host:
 
     // into usize or fail
     let len = as_usize_or_fail!(interpreter, len);
-    // deduce gas
-    gas_or_fail!(interpreter, gas::verylowcopy_cost(len as u64));
+    // deduce energy
+    energy_or_fail!(interpreter, energy::verylowcopy_cost(len as u64));
     if len == 0 {
         return;
     }

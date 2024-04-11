@@ -1,5 +1,6 @@
 use crate::{
-    b256, B256, BLOB_GASPRICE_UPDATE_FRACTION, MIN_BLOB_GASPRICE, TARGET_BLOB_GAS_PER_BLOCK,
+    b256, B256, BLOB_ENERGYPRICE_UPDATE_FRACTION, MIN_BLOB_ENERGYPRICE,
+    TARGET_BLOB_ENERGY_PER_BLOCK,
 };
 pub use alloy_primitives::sha3;
 
@@ -7,25 +8,29 @@ pub use alloy_primitives::sha3;
 pub const SHA_EMPTY: B256 =
     b256!("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a");
 
-/// Calculates the `excess_blob_gas` from the parent header's `blob_gas_used` and `excess_blob_gas`.
+/// Calculates the `excess_blob_energy` from the parent header's `blob_energy_used` and `excess_blob_energy`.
 ///
 /// See also [the EIP-4844 helpers]<https://eips.ethereum.org/EIPS/eip-4844#helpers>
-/// (`calc_excess_blob_gas`).
+/// (`calc_excess_blob_energy`).
 #[inline]
-pub fn calc_excess_blob_gas(parent_excess_blob_gas: u64, parent_blob_gas_used: u64) -> u64 {
-    (parent_excess_blob_gas + parent_blob_gas_used).saturating_sub(TARGET_BLOB_GAS_PER_BLOCK)
+pub fn calc_excess_blob_energy(
+    parent_excess_blob_energy: u64,
+    parent_blob_energy_used: u64,
+) -> u64 {
+    (parent_excess_blob_energy + parent_blob_energy_used)
+        .saturating_sub(TARGET_BLOB_ENERGY_PER_BLOCK)
 }
 
-/// Calculates the blob gas price from the header's excess blob gas field.
+/// Calculates the blob energy price from the header's excess blob energy field.
 ///
 /// See also [the EIP-4844 helpers](https://eips.ethereum.org/EIPS/eip-4844#helpers)
-/// (`get_blob_gasprice`).
+/// (`get_blob_energyprice`).
 #[inline]
-pub fn calc_blob_gasprice(excess_blob_gas: u64) -> u128 {
+pub fn calc_blob_energyprice(excess_blob_energy: u64) -> u128 {
     fake_exponential(
-        MIN_BLOB_GASPRICE,
-        excess_blob_gas,
-        BLOB_GASPRICE_UPDATE_FRACTION,
+        MIN_BLOB_ENERGYPRICE,
+        excess_blob_energy,
+        BLOB_ENERGYPRICE_UPDATE_FRACTION,
     )
 }
 
@@ -62,58 +67,58 @@ pub fn fake_exponential(factor: u64, numerator: u64, denominator: u64) -> u128 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::GAS_PER_BLOB;
+    use crate::ENERGY_PER_BLOB;
 
     // https://github.com/ethereum/go-ethereum/blob/28857080d732857030eda80c69b9ba2c8926f221/consensus/misc/eip4844/eip4844_test.go#L27
     #[test]
-    fn test_calc_excess_blob_gas() {
+    fn test_calc_excess_blob_energy() {
         for t @ &(excess, blobs, expected) in &[
-            // The excess blob gas should not increase from zero if the used blob
+            // The excess blob energy should not increase from zero if the used blob
             // slots are below - or equal - to the target.
             (0, 0, 0),
             (0, 1, 0),
-            (0, TARGET_BLOB_GAS_PER_BLOCK / GAS_PER_BLOB, 0),
-            // If the target blob gas is exceeded, the excessBlobGas should increase
+            (0, TARGET_BLOB_ENERGY_PER_BLOCK / ENERGY_PER_BLOB, 0),
+            // If the target blob energy is exceeded, the excessBlobEnergy should increase
             // by however much it was overshot
             (
                 0,
-                (TARGET_BLOB_GAS_PER_BLOCK / GAS_PER_BLOB) + 1,
-                GAS_PER_BLOB,
+                (TARGET_BLOB_ENERGY_PER_BLOCK / ENERGY_PER_BLOB) + 1,
+                ENERGY_PER_BLOB,
             ),
             (
                 1,
-                (TARGET_BLOB_GAS_PER_BLOCK / GAS_PER_BLOB) + 1,
-                GAS_PER_BLOB + 1,
+                (TARGET_BLOB_ENERGY_PER_BLOCK / ENERGY_PER_BLOB) + 1,
+                ENERGY_PER_BLOB + 1,
             ),
             (
                 1,
-                (TARGET_BLOB_GAS_PER_BLOCK / GAS_PER_BLOB) + 2,
-                2 * GAS_PER_BLOB + 1,
+                (TARGET_BLOB_ENERGY_PER_BLOCK / ENERGY_PER_BLOB) + 2,
+                2 * ENERGY_PER_BLOB + 1,
             ),
-            // The excess blob gas should decrease by however much the target was
+            // The excess blob energy should decrease by however much the target was
             // under-shot, capped at zero.
             (
-                TARGET_BLOB_GAS_PER_BLOCK,
-                TARGET_BLOB_GAS_PER_BLOCK / GAS_PER_BLOB,
-                TARGET_BLOB_GAS_PER_BLOCK,
+                TARGET_BLOB_ENERGY_PER_BLOCK,
+                TARGET_BLOB_ENERGY_PER_BLOCK / ENERGY_PER_BLOB,
+                TARGET_BLOB_ENERGY_PER_BLOCK,
             ),
             (
-                TARGET_BLOB_GAS_PER_BLOCK,
-                (TARGET_BLOB_GAS_PER_BLOCK / GAS_PER_BLOB) - 1,
-                TARGET_BLOB_GAS_PER_BLOCK - GAS_PER_BLOB,
+                TARGET_BLOB_ENERGY_PER_BLOCK,
+                (TARGET_BLOB_ENERGY_PER_BLOCK / ENERGY_PER_BLOB) - 1,
+                TARGET_BLOB_ENERGY_PER_BLOCK - ENERGY_PER_BLOB,
             ),
             (
-                TARGET_BLOB_GAS_PER_BLOCK,
-                (TARGET_BLOB_GAS_PER_BLOCK / GAS_PER_BLOB) - 2,
-                TARGET_BLOB_GAS_PER_BLOCK - (2 * GAS_PER_BLOB),
+                TARGET_BLOB_ENERGY_PER_BLOCK,
+                (TARGET_BLOB_ENERGY_PER_BLOCK / ENERGY_PER_BLOB) - 2,
+                TARGET_BLOB_ENERGY_PER_BLOCK - (2 * ENERGY_PER_BLOB),
             ),
             (
-                GAS_PER_BLOB - 1,
-                (TARGET_BLOB_GAS_PER_BLOCK / GAS_PER_BLOB) - 1,
+                ENERGY_PER_BLOB - 1,
+                (TARGET_BLOB_ENERGY_PER_BLOCK / ENERGY_PER_BLOB) - 1,
                 0,
             ),
         ] {
-            let actual = calc_excess_blob_gas(excess, blobs * GAS_PER_BLOB);
+            let actual = calc_excess_blob_energy(excess, blobs * ENERGY_PER_BLOB);
             assert_eq!(actual, expected, "test: {t:?}");
         }
     }
@@ -126,18 +131,18 @@ mod tests {
             (2314057, 1),
             (2314058, 2),
             (10 * 1024 * 1024, 23),
-            // calc_blob_gasprice approximates `e ** (excess_blob_gas / BLOB_GASPRICE_UPDATE_FRACTION)` using Taylor expansion
+            // calc_blob_energyprice approximates `e ** (excess_blob_energy / BLOB_ENERGYPRICE_UPDATE_FRACTION)` using Taylor expansion
             //
             // to roughly find where boundaries will be hit:
-            // 2 ** bits = e ** (excess_blob_gas / BLOB_GASPRICE_UPDATE_FRACTION)
-            // excess_blob_gas = ln(2 ** bits) * BLOB_GASPRICE_UPDATE_FRACTION
+            // 2 ** bits = e ** (excess_blob_energy / BLOB_ENERGYPRICE_UPDATE_FRACTION)
+            // excess_blob_energy = ln(2 ** bits) * BLOB_ENERGYPRICE_UPDATE_FRACTION
             (148099578, 18446739238971471609), // output is just below the overflow
             (148099579, 18446744762204311910), // output is just after the overflow
             (161087488, 902580055246494526580),
         ];
 
         for &(excess, expected) in blob_fee_vectors {
-            let actual = calc_blob_gasprice(excess);
+            let actual = calc_blob_energyprice(excess);
             assert_eq!(actual, expected, "test: {excess}");
         }
     }
@@ -161,7 +166,7 @@ mod tests {
             (1, 5, 2, 11),   // approximate 12.18
             (2, 5, 2, 23),   // approximate 24.36
             (1, 50000000, 2225652, 5709098764),
-            (1, 380928, BLOB_GASPRICE_UPDATE_FRACTION, 1),
+            (1, 380928, BLOB_ENERGYPRICE_UPDATE_FRACTION, 1),
         ] {
             let actual = fake_exponential(factor, numerator, denominator);
             assert_eq!(actual, expected, "test: {t:?}");

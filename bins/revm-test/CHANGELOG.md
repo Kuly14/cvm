@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release v23, revm v3.2.0 ([#464](https://github.com/bluealloy/revm/pull/464))
 - Release v22, revm v3.1.1 ([#460](https://github.com/bluealloy/revm/pull/460))
 - v21, revm v3.1.0 ([#444](https://github.com/bluealloy/revm/pull/444))
-- remove gas blocks ([#391](https://github.com/bluealloy/revm/pull/391))
+- remove energy blocks ([#391](https://github.com/bluealloy/revm/pull/391))
 - *(deps)* bump bytes from 1.3.0 to 1.4.0 ([#355](https://github.com/bluealloy/revm/pull/355))
 - Bump v20, changelog ([#350](https://github.com/bluealloy/revm/pull/350))
 - includes to libs ([#338](https://github.com/bluealloy/revm/pull/338))
@@ -45,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - revm bump v2.0.0, precompile bump v1.1.1 ([#212](https://github.com/bluealloy/revm/pull/212))
 - Cfg choose create analysis, option on bytecode size limit ([#210](https://github.com/bluealloy/revm/pull/210))
 - Cargo sort. Bump lib versions ([#208](https://github.com/bluealloy/revm/pull/208))
-- Return `ExecutionResult`, which includes `gas_refunded` ([#169](https://github.com/bluealloy/revm/pull/169))
+- Return `ExecutionResult`, which includes `energy_refunded` ([#169](https://github.com/bluealloy/revm/pull/169))
 - Bytecode hash, remove override_spec, ([#165](https://github.com/bluealloy/revm/pull/165))
 - revm bump 1.8. update libs. snailtracer rename ([#159](https://github.com/bluealloy/revm/pull/159))
 - v6 changelog, bump versions

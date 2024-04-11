@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::{
-    gas,
+    energy,
     primitives::{Spec, SpecId},
     Host, Interpreter,
 };
@@ -166,7 +166,7 @@ macro_rules! opcodes {
 
 // When adding new opcodes:
 // 1. add the opcode to the list below; make sure it's sorted by opcode value
-// 2. add its gas info in the `opcode_gas_info` function below
+// 2. add its energy info in the `opcode_energy_info` function below
 // 3. implement the opcode in the corresponding module;
 //    the function signature must be the exact same as the others
 opcodes! {
@@ -230,7 +230,7 @@ opcodes! {
     0x38 => CODESIZE     => system::codesize,
     0x39 => CODECOPY     => system::codecopy,
 
-    0x3A => GASPRICE       => host_env::gasprice,
+    0x3A => ENERGYPRICE       => host_env::energyprice,
     0x3B => EXTCODESIZE    => host::extcodesize::<H, SPEC>,
     0x3C => EXTCODECOPY    => host::extcodecopy::<H, SPEC>,
     0x3D => RETURNDATASIZE => system::returndatasize::<H, SPEC>,
@@ -241,7 +241,7 @@ opcodes! {
     0x42 => TIMESTAMP      => host_env::timestamp,
     0x43 => NUMBER         => host_env::number,
     0x44 => DIFFICULTY     => host_env::difficulty::<H, SPEC>,
-    0x45 => GASLIMIT       => host_env::gaslimit,
+    0x45 => ENERGYLIMIT       => host_env::energylimit,
     0x46 => CHAINID        => host_env::chainid::<H, SPEC>,
     0x47 => SELFBALANCE    => host::selfbalance::<H, SPEC>,
     0x48 => BASEFEE        => host_env::basefee::<H, SPEC>,
@@ -262,7 +262,7 @@ opcodes! {
     0x57 => JUMPI    => control::jumpi,
     0x58 => PC       => control::pc,
     0x59 => MSIZE    => memory::msize,
-    0x5A => GAS      => system::gas,
+    0x5A => ENERGY      => system::energy,
     0x5B => JUMPDEST => control::jumpdest,
     0x5C => TLOAD    => host::tload::<H, SPEC>,
     0x5D => TSTORE   => host::tstore::<H, SPEC>,
@@ -501,14 +501,14 @@ impl OpCode {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct OpInfo {
     /// Data contains few information packed inside u32:
-    /// IS_JUMP (1bit) | IS_GAS_BLOCK_END (1bit) | IS_PUSH (1bit) | gas (29bits)
+    /// IS_JUMP (1bit) | IS_ENERGY_BLOCK_END (1bit) | IS_PUSH (1bit) | energy (29bits)
     data: u32,
 }
 
 const JUMP_MASK: u32 = 0x80000000;
-const GAS_BLOCK_END_MASK: u32 = 0x40000000;
+const ENERGY_BLOCK_END_MASK: u32 = 0x40000000;
 const IS_PUSH_MASK: u32 = 0x20000000;
-const GAS_MASK: u32 = 0x1FFFFFFF;
+const ENERGY_MASK: u32 = 0x1FFFFFFF;
 
 impl OpInfo {
     /// Creates a new empty [`OpInfo`].
@@ -516,34 +516,36 @@ impl OpInfo {
         Self { data: 0 }
     }
 
-    /// Creates a new dynamic gas [`OpInfo`].
-    pub const fn dynamic_gas() -> Self {
+    /// Creates a new dynamic energy [`OpInfo`].
+    pub const fn dynamic_energy() -> Self {
         Self { data: 0 }
     }
 
-    /// Creates a new gas block end [`OpInfo`].
-    pub const fn gas_block_end(gas: u64) -> Self {
+    /// Creates a new energy block end [`OpInfo`].
+    pub const fn energy_block_end(energy: u64) -> Self {
         Self {
-            data: gas as u32 | GAS_BLOCK_END_MASK,
+            data: energy as u32 | ENERGY_BLOCK_END_MASK,
         }
     }
 
-    /// Creates a new [`OpInfo`] with the given gas value.
-    pub const fn gas(gas: u64) -> Self {
-        Self { data: gas as u32 }
+    /// Creates a new [`OpInfo`] with the given energy value.
+    pub const fn energy(energy: u64) -> Self {
+        Self {
+            data: energy as u32,
+        }
     }
 
     /// Creates a new push [`OpInfo`].
     pub const fn push_opcode() -> Self {
         Self {
-            data: gas::VERYLOW as u32 | IS_PUSH_MASK,
+            data: energy::VERYLOW as u32 | IS_PUSH_MASK,
         }
     }
 
     /// Creates a new jumpdest [`OpInfo`].
     pub const fn jumpdest() -> Self {
         Self {
-            data: JUMP_MASK | GAS_BLOCK_END_MASK,
+            data: JUMP_MASK | ENERGY_BLOCK_END_MASK,
         }
     }
 
@@ -553,10 +555,10 @@ impl OpInfo {
         self.data & JUMP_MASK == JUMP_MASK
     }
 
-    /// Returns whether the opcode is a gas block end.
+    /// Returns whether the opcode is a energy block end.
     #[inline]
-    pub fn is_gas_block_end(self) -> bool {
-        self.data & GAS_BLOCK_END_MASK == GAS_BLOCK_END_MASK
+    pub fn is_energy_block_end(self) -> bool {
+        self.data & ENERGY_BLOCK_END_MASK == ENERGY_BLOCK_END_MASK
     }
 
     /// Returns whether the opcode is a push.
@@ -565,60 +567,60 @@ impl OpInfo {
         self.data & IS_PUSH_MASK == IS_PUSH_MASK
     }
 
-    /// Returns the gas cost of the opcode.
+    /// Returns the energy cost of the opcode.
     #[inline]
-    pub fn get_gas(self) -> u32 {
-        self.data & GAS_MASK
+    pub fn get_energy(self) -> u32 {
+        self.data & ENERGY_MASK
     }
 }
 
-const fn opcode_gas_info(opcode: u8, spec: SpecId) -> OpInfo {
+const fn opcode_energy_info(opcode: u8, spec: SpecId) -> OpInfo {
     match opcode {
-        STOP => OpInfo::gas_block_end(0),
-        ADD => OpInfo::gas(gas::VERYLOW),
-        MUL => OpInfo::gas(gas::LOW),
-        SUB => OpInfo::gas(gas::VERYLOW),
-        DIV => OpInfo::gas(gas::LOW),
-        SDIV => OpInfo::gas(gas::LOW),
-        MOD => OpInfo::gas(gas::LOW),
-        SMOD => OpInfo::gas(gas::LOW),
-        ADDMOD => OpInfo::gas(gas::MID),
-        MULMOD => OpInfo::gas(gas::MID),
-        EXP => OpInfo::dynamic_gas(),
-        SIGNEXTEND => OpInfo::gas(gas::LOW),
+        STOP => OpInfo::energy_block_end(0),
+        ADD => OpInfo::energy(energy::VERYLOW),
+        MUL => OpInfo::energy(energy::LOW),
+        SUB => OpInfo::energy(energy::VERYLOW),
+        DIV => OpInfo::energy(energy::LOW),
+        SDIV => OpInfo::energy(energy::LOW),
+        MOD => OpInfo::energy(energy::LOW),
+        SMOD => OpInfo::energy(energy::LOW),
+        ADDMOD => OpInfo::energy(energy::MID),
+        MULMOD => OpInfo::energy(energy::MID),
+        EXP => OpInfo::dynamic_energy(),
+        SIGNEXTEND => OpInfo::energy(energy::LOW),
         0x0C => OpInfo::none(),
         0x0D => OpInfo::none(),
         0x0E => OpInfo::none(),
         0x0F => OpInfo::none(),
-        LT => OpInfo::gas(gas::VERYLOW),
-        GT => OpInfo::gas(gas::VERYLOW),
-        SLT => OpInfo::gas(gas::VERYLOW),
-        SGT => OpInfo::gas(gas::VERYLOW),
-        EQ => OpInfo::gas(gas::VERYLOW),
-        ISZERO => OpInfo::gas(gas::VERYLOW),
-        AND => OpInfo::gas(gas::VERYLOW),
-        OR => OpInfo::gas(gas::VERYLOW),
-        XOR => OpInfo::gas(gas::VERYLOW),
-        NOT => OpInfo::gas(gas::VERYLOW),
-        BYTE => OpInfo::gas(gas::VERYLOW),
-        SHL => OpInfo::gas(if SpecId::enabled(spec, SpecId::CONSTANTINOPLE) {
-            gas::VERYLOW
+        LT => OpInfo::energy(energy::VERYLOW),
+        GT => OpInfo::energy(energy::VERYLOW),
+        SLT => OpInfo::energy(energy::VERYLOW),
+        SGT => OpInfo::energy(energy::VERYLOW),
+        EQ => OpInfo::energy(energy::VERYLOW),
+        ISZERO => OpInfo::energy(energy::VERYLOW),
+        AND => OpInfo::energy(energy::VERYLOW),
+        OR => OpInfo::energy(energy::VERYLOW),
+        XOR => OpInfo::energy(energy::VERYLOW),
+        NOT => OpInfo::energy(energy::VERYLOW),
+        BYTE => OpInfo::energy(energy::VERYLOW),
+        SHL => OpInfo::energy(if SpecId::enabled(spec, SpecId::CONSTANTINOPLE) {
+            energy::VERYLOW
         } else {
             0
         }),
-        SHR => OpInfo::gas(if SpecId::enabled(spec, SpecId::CONSTANTINOPLE) {
-            gas::VERYLOW
+        SHR => OpInfo::energy(if SpecId::enabled(spec, SpecId::CONSTANTINOPLE) {
+            energy::VERYLOW
         } else {
             0
         }),
-        SAR => OpInfo::gas(if SpecId::enabled(spec, SpecId::CONSTANTINOPLE) {
-            gas::VERYLOW
+        SAR => OpInfo::energy(if SpecId::enabled(spec, SpecId::CONSTANTINOPLE) {
+            energy::VERYLOW
         } else {
             0
         }),
         0x1E => OpInfo::none(),
         0x1F => OpInfo::none(),
-        SHA3 => OpInfo::dynamic_gas(),
+        SHA3 => OpInfo::dynamic_energy(),
         0x21 => OpInfo::none(),
         0x22 => OpInfo::none(),
         0x23 => OpInfo::none(),
@@ -634,39 +636,39 @@ const fn opcode_gas_info(opcode: u8, spec: SpecId) -> OpInfo {
         0x2D => OpInfo::none(),
         0x2E => OpInfo::none(),
         0x2F => OpInfo::none(),
-        ADDRESS => OpInfo::gas(gas::BASE),
-        BALANCE => OpInfo::dynamic_gas(),
-        ORIGIN => OpInfo::gas(gas::BASE),
-        CALLER => OpInfo::gas(gas::BASE),
-        CALLVALUE => OpInfo::gas(gas::BASE),
-        CALLDATALOAD => OpInfo::gas(gas::VERYLOW),
-        CALLDATASIZE => OpInfo::gas(gas::BASE),
-        CALLDATACOPY => OpInfo::dynamic_gas(),
-        CODESIZE => OpInfo::gas(gas::BASE),
-        CODECOPY => OpInfo::dynamic_gas(),
-        GASPRICE => OpInfo::gas(gas::BASE),
-        EXTCODESIZE => OpInfo::gas(if SpecId::enabled(spec, SpecId::BERLIN) {
-            gas::WARM_STORAGE_READ_COST // add only part of gas
+        ADDRESS => OpInfo::energy(energy::BASE),
+        BALANCE => OpInfo::dynamic_energy(),
+        ORIGIN => OpInfo::energy(energy::BASE),
+        CALLER => OpInfo::energy(energy::BASE),
+        CALLVALUE => OpInfo::energy(energy::BASE),
+        CALLDATALOAD => OpInfo::energy(energy::VERYLOW),
+        CALLDATASIZE => OpInfo::energy(energy::BASE),
+        CALLDATACOPY => OpInfo::dynamic_energy(),
+        CODESIZE => OpInfo::energy(energy::BASE),
+        CODECOPY => OpInfo::dynamic_energy(),
+        ENERGYPRICE => OpInfo::energy(energy::BASE),
+        EXTCODESIZE => OpInfo::energy(if SpecId::enabled(spec, SpecId::BERLIN) {
+            energy::WARM_STORAGE_READ_COST // add only part of energy
         } else if SpecId::enabled(spec, SpecId::TANGERINE) {
             700
         } else {
             20
         }),
-        EXTCODECOPY => OpInfo::gas(if SpecId::enabled(spec, SpecId::BERLIN) {
-            gas::WARM_STORAGE_READ_COST // add only part of gas
+        EXTCODECOPY => OpInfo::energy(if SpecId::enabled(spec, SpecId::BERLIN) {
+            energy::WARM_STORAGE_READ_COST // add only part of energy
         } else if SpecId::enabled(spec, SpecId::TANGERINE) {
             700
         } else {
             20
         }),
-        RETURNDATASIZE => OpInfo::gas(if SpecId::enabled(spec, SpecId::BYZANTIUM) {
-            gas::BASE
+        RETURNDATASIZE => OpInfo::energy(if SpecId::enabled(spec, SpecId::BYZANTIUM) {
+            energy::BASE
         } else {
             0
         }),
-        RETURNDATACOPY => OpInfo::dynamic_gas(),
-        EXTCODEHASH => OpInfo::gas(if SpecId::enabled(spec, SpecId::BERLIN) {
-            gas::WARM_STORAGE_READ_COST // add only part of gas
+        RETURNDATACOPY => OpInfo::dynamic_energy(),
+        EXTCODEHASH => OpInfo::energy(if SpecId::enabled(spec, SpecId::BERLIN) {
+            energy::WARM_STORAGE_READ_COST // add only part of energy
         } else if SpecId::enabled(spec, SpecId::ISTANBUL) {
             700
         } else if SpecId::enabled(spec, SpecId::PETERSBURG) {
@@ -674,34 +676,34 @@ const fn opcode_gas_info(opcode: u8, spec: SpecId) -> OpInfo {
         } else {
             0 // not enabled
         }),
-        BLOCKHASH => OpInfo::gas(gas::BLOCKHASH),
-        COINBASE => OpInfo::gas(gas::BASE),
-        TIMESTAMP => OpInfo::gas(gas::BASE),
-        NUMBER => OpInfo::gas(gas::BASE),
-        DIFFICULTY => OpInfo::gas(gas::BASE),
-        GASLIMIT => OpInfo::gas(gas::BASE),
-        CHAINID => OpInfo::gas(if SpecId::enabled(spec, SpecId::ISTANBUL) {
-            gas::BASE
+        BLOCKHASH => OpInfo::energy(energy::BLOCKHASH),
+        COINBASE => OpInfo::energy(energy::BASE),
+        TIMESTAMP => OpInfo::energy(energy::BASE),
+        NUMBER => OpInfo::energy(energy::BASE),
+        DIFFICULTY => OpInfo::energy(energy::BASE),
+        ENERGYLIMIT => OpInfo::energy(energy::BASE),
+        CHAINID => OpInfo::energy(if SpecId::enabled(spec, SpecId::ISTANBUL) {
+            energy::BASE
         } else {
             0
         }),
-        SELFBALANCE => OpInfo::gas(if SpecId::enabled(spec, SpecId::ISTANBUL) {
-            gas::LOW
+        SELFBALANCE => OpInfo::energy(if SpecId::enabled(spec, SpecId::ISTANBUL) {
+            energy::LOW
         } else {
             0
         }),
-        BASEFEE => OpInfo::gas(if SpecId::enabled(spec, SpecId::LONDON) {
-            gas::BASE
+        BASEFEE => OpInfo::energy(if SpecId::enabled(spec, SpecId::LONDON) {
+            energy::BASE
         } else {
             0
         }),
-        BLOBHASH => OpInfo::gas(if SpecId::enabled(spec, SpecId::CANCUN) {
-            gas::VERYLOW
+        BLOBHASH => OpInfo::energy(if SpecId::enabled(spec, SpecId::CANCUN) {
+            energy::VERYLOW
         } else {
             0
         }),
-        BLOBBASEFEE => OpInfo::gas(if SpecId::enabled(spec, SpecId::CANCUN) {
-            gas::BASE
+        BLOBBASEFEE => OpInfo::energy(if SpecId::enabled(spec, SpecId::CANCUN) {
+            energy::BASE
         } else {
             0
         }),
@@ -710,33 +712,33 @@ const fn opcode_gas_info(opcode: u8, spec: SpecId) -> OpInfo {
         0x4D => OpInfo::none(),
         0x4E => OpInfo::none(),
         0x4F => OpInfo::none(),
-        POP => OpInfo::gas(gas::BASE),
-        MLOAD => OpInfo::gas(gas::VERYLOW),
-        MSTORE => OpInfo::gas(gas::VERYLOW),
-        MSTORE8 => OpInfo::gas(gas::VERYLOW),
-        SLOAD => OpInfo::dynamic_gas(),
-        SSTORE => OpInfo::gas_block_end(0),
-        JUMP => OpInfo::gas_block_end(gas::MID),
-        JUMPI => OpInfo::gas_block_end(gas::HIGH),
-        PC => OpInfo::gas(gas::BASE),
-        MSIZE => OpInfo::gas(gas::BASE),
-        GAS => OpInfo::gas_block_end(gas::BASE),
-        // gas::JUMPDEST gas is calculated in function call
+        POP => OpInfo::energy(energy::BASE),
+        MLOAD => OpInfo::energy(energy::VERYLOW),
+        MSTORE => OpInfo::energy(energy::VERYLOW),
+        MSTORE8 => OpInfo::energy(energy::VERYLOW),
+        SLOAD => OpInfo::dynamic_energy(),
+        SSTORE => OpInfo::energy_block_end(0),
+        JUMP => OpInfo::energy_block_end(energy::MID),
+        JUMPI => OpInfo::energy_block_end(energy::HIGH),
+        PC => OpInfo::energy(energy::BASE),
+        MSIZE => OpInfo::energy(energy::BASE),
+        ENERGY => OpInfo::energy_block_end(energy::BASE),
+        // energy::JUMPDEST energy is calculated in function call
         JUMPDEST => OpInfo::jumpdest(),
-        TLOAD => OpInfo::gas(if SpecId::enabled(spec, SpecId::CANCUN) {
-            gas::WARM_STORAGE_READ_COST
+        TLOAD => OpInfo::energy(if SpecId::enabled(spec, SpecId::CANCUN) {
+            energy::WARM_STORAGE_READ_COST
         } else {
             0
         }),
-        TSTORE => OpInfo::gas(if SpecId::enabled(spec, SpecId::CANCUN) {
-            gas::WARM_STORAGE_READ_COST
+        TSTORE => OpInfo::energy(if SpecId::enabled(spec, SpecId::CANCUN) {
+            energy::WARM_STORAGE_READ_COST
         } else {
             0
         }),
-        MCOPY => OpInfo::dynamic_gas(),
+        MCOPY => OpInfo::dynamic_energy(),
 
-        PUSH0 => OpInfo::gas(if SpecId::enabled(spec, SpecId::SHANGHAI) {
-            gas::BASE
+        PUSH0 => OpInfo::energy(if SpecId::enabled(spec, SpecId::SHANGHAI) {
+            energy::BASE
         } else {
             0
         }),
@@ -773,45 +775,45 @@ const fn opcode_gas_info(opcode: u8, spec: SpecId) -> OpInfo {
         PUSH31 => OpInfo::push_opcode(),
         PUSH32 => OpInfo::push_opcode(),
 
-        DUP1 => OpInfo::gas(gas::VERYLOW),
-        DUP2 => OpInfo::gas(gas::VERYLOW),
-        DUP3 => OpInfo::gas(gas::VERYLOW),
-        DUP4 => OpInfo::gas(gas::VERYLOW),
-        DUP5 => OpInfo::gas(gas::VERYLOW),
-        DUP6 => OpInfo::gas(gas::VERYLOW),
-        DUP7 => OpInfo::gas(gas::VERYLOW),
-        DUP8 => OpInfo::gas(gas::VERYLOW),
-        DUP9 => OpInfo::gas(gas::VERYLOW),
-        DUP10 => OpInfo::gas(gas::VERYLOW),
-        DUP11 => OpInfo::gas(gas::VERYLOW),
-        DUP12 => OpInfo::gas(gas::VERYLOW),
-        DUP13 => OpInfo::gas(gas::VERYLOW),
-        DUP14 => OpInfo::gas(gas::VERYLOW),
-        DUP15 => OpInfo::gas(gas::VERYLOW),
-        DUP16 => OpInfo::gas(gas::VERYLOW),
+        DUP1 => OpInfo::energy(energy::VERYLOW),
+        DUP2 => OpInfo::energy(energy::VERYLOW),
+        DUP3 => OpInfo::energy(energy::VERYLOW),
+        DUP4 => OpInfo::energy(energy::VERYLOW),
+        DUP5 => OpInfo::energy(energy::VERYLOW),
+        DUP6 => OpInfo::energy(energy::VERYLOW),
+        DUP7 => OpInfo::energy(energy::VERYLOW),
+        DUP8 => OpInfo::energy(energy::VERYLOW),
+        DUP9 => OpInfo::energy(energy::VERYLOW),
+        DUP10 => OpInfo::energy(energy::VERYLOW),
+        DUP11 => OpInfo::energy(energy::VERYLOW),
+        DUP12 => OpInfo::energy(energy::VERYLOW),
+        DUP13 => OpInfo::energy(energy::VERYLOW),
+        DUP14 => OpInfo::energy(energy::VERYLOW),
+        DUP15 => OpInfo::energy(energy::VERYLOW),
+        DUP16 => OpInfo::energy(energy::VERYLOW),
 
-        SWAP1 => OpInfo::gas(gas::VERYLOW),
-        SWAP2 => OpInfo::gas(gas::VERYLOW),
-        SWAP3 => OpInfo::gas(gas::VERYLOW),
-        SWAP4 => OpInfo::gas(gas::VERYLOW),
-        SWAP5 => OpInfo::gas(gas::VERYLOW),
-        SWAP6 => OpInfo::gas(gas::VERYLOW),
-        SWAP7 => OpInfo::gas(gas::VERYLOW),
-        SWAP8 => OpInfo::gas(gas::VERYLOW),
-        SWAP9 => OpInfo::gas(gas::VERYLOW),
-        SWAP10 => OpInfo::gas(gas::VERYLOW),
-        SWAP11 => OpInfo::gas(gas::VERYLOW),
-        SWAP12 => OpInfo::gas(gas::VERYLOW),
-        SWAP13 => OpInfo::gas(gas::VERYLOW),
-        SWAP14 => OpInfo::gas(gas::VERYLOW),
-        SWAP15 => OpInfo::gas(gas::VERYLOW),
-        SWAP16 => OpInfo::gas(gas::VERYLOW),
+        SWAP1 => OpInfo::energy(energy::VERYLOW),
+        SWAP2 => OpInfo::energy(energy::VERYLOW),
+        SWAP3 => OpInfo::energy(energy::VERYLOW),
+        SWAP4 => OpInfo::energy(energy::VERYLOW),
+        SWAP5 => OpInfo::energy(energy::VERYLOW),
+        SWAP6 => OpInfo::energy(energy::VERYLOW),
+        SWAP7 => OpInfo::energy(energy::VERYLOW),
+        SWAP8 => OpInfo::energy(energy::VERYLOW),
+        SWAP9 => OpInfo::energy(energy::VERYLOW),
+        SWAP10 => OpInfo::energy(energy::VERYLOW),
+        SWAP11 => OpInfo::energy(energy::VERYLOW),
+        SWAP12 => OpInfo::energy(energy::VERYLOW),
+        SWAP13 => OpInfo::energy(energy::VERYLOW),
+        SWAP14 => OpInfo::energy(energy::VERYLOW),
+        SWAP15 => OpInfo::energy(energy::VERYLOW),
+        SWAP16 => OpInfo::energy(energy::VERYLOW),
 
-        LOG0 => OpInfo::dynamic_gas(),
-        LOG1 => OpInfo::dynamic_gas(),
-        LOG2 => OpInfo::dynamic_gas(),
-        LOG3 => OpInfo::dynamic_gas(),
-        LOG4 => OpInfo::dynamic_gas(),
+        LOG0 => OpInfo::dynamic_energy(),
+        LOG1 => OpInfo::dynamic_energy(),
+        LOG2 => OpInfo::dynamic_energy(),
+        LOG3 => OpInfo::dynamic_energy(),
+        LOG4 => OpInfo::dynamic_energy(),
         0xA5 => OpInfo::none(),
         0xA6 => OpInfo::none(),
         0xA7 => OpInfo::none(),
@@ -887,72 +889,72 @@ const fn opcode_gas_info(opcode: u8, spec: SpecId) -> OpInfo {
         0xED => OpInfo::none(),
         0xEE => OpInfo::none(),
         0xEF => OpInfo::none(),
-        CREATE => OpInfo::gas_block_end(0),
-        CALL => OpInfo::gas_block_end(0),
-        CALLCODE => OpInfo::gas_block_end(0),
-        RETURN => OpInfo::gas_block_end(0),
-        DELEGATECALL => OpInfo::gas_block_end(0),
-        CREATE2 => OpInfo::gas_block_end(0),
+        CREATE => OpInfo::energy_block_end(0),
+        CALL => OpInfo::energy_block_end(0),
+        CALLCODE => OpInfo::energy_block_end(0),
+        RETURN => OpInfo::energy_block_end(0),
+        DELEGATECALL => OpInfo::energy_block_end(0),
+        CREATE2 => OpInfo::energy_block_end(0),
         0xF6 => OpInfo::none(),
         0xF7 => OpInfo::none(),
         0xF8 => OpInfo::none(),
         0xF9 => OpInfo::none(),
-        STATICCALL => OpInfo::gas_block_end(0),
+        STATICCALL => OpInfo::energy_block_end(0),
         0xFB => OpInfo::none(),
         0xFC => OpInfo::none(),
-        REVERT => OpInfo::gas_block_end(0),
-        INVALID => OpInfo::gas_block_end(0),
-        SELFDESTRUCT => OpInfo::gas_block_end(0),
+        REVERT => OpInfo::energy_block_end(0),
+        INVALID => OpInfo::energy_block_end(0),
+        SELFDESTRUCT => OpInfo::energy_block_end(0),
     }
 }
 
-const fn make_gas_table(spec: SpecId) -> [OpInfo; 256] {
+const fn make_energy_table(spec: SpecId) -> [OpInfo; 256] {
     let mut table = [OpInfo::none(); 256];
     let mut i = 0;
     while i < 256 {
-        table[i] = opcode_gas_info(i as u8, spec);
+        table[i] = opcode_energy_info(i as u8, spec);
         i += 1;
     }
     table
 }
 
-/// Returns a lookup table of opcode gas info for the given [`SpecId`].
+/// Returns a lookup table of opcode energy info for the given [`SpecId`].
 #[inline]
-pub const fn spec_opcode_gas(spec_id: SpecId) -> &'static [OpInfo; 256] {
-    macro_rules! gas_maps {
+pub const fn spec_opcode_energy(spec_id: SpecId) -> &'static [OpInfo; 256] {
+    macro_rules! energy_maps {
         ($($id:ident),* $(,)?) => {
             match spec_id {
             $(
                 SpecId::$id => {
-                    const TABLE: &[OpInfo; 256] = &make_gas_table(SpecId::$id);
+                    const TABLE: &[OpInfo; 256] = &make_energy_table(SpecId::$id);
                     TABLE
                 }
             )*
                 #[cfg(feature = "optimism")]
                 SpecId::BEDROCK => {
-                    const TABLE: &[OpInfo;256] = &make_gas_table(SpecId::BEDROCK);
+                    const TABLE: &[OpInfo;256] = &make_energy_table(SpecId::BEDROCK);
                     TABLE
                 }
                 #[cfg(feature = "optimism")]
                 SpecId::REGOLITH => {
-                    const TABLE: &[OpInfo;256] = &make_gas_table(SpecId::REGOLITH);
+                    const TABLE: &[OpInfo;256] = &make_energy_table(SpecId::REGOLITH);
                     TABLE
                 }
                 #[cfg(feature = "optimism")]
                 SpecId::CANYON => {
-                    const TABLE: &[OpInfo;256] = &make_gas_table(SpecId::CANYON);
+                    const TABLE: &[OpInfo;256] = &make_energy_table(SpecId::CANYON);
                     TABLE
                 }
                 #[cfg(feature = "optimism")]
                 SpecId::ECOTONE => {
-                    const TABLE: &[OpInfo;256] = &make_gas_table(SpecId::ECOTONE);
+                    const TABLE: &[OpInfo;256] = &make_energy_table(SpecId::ECOTONE);
                     TABLE
                 }
             }
         };
     }
 
-    gas_maps!(
+    energy_maps!(
         FRONTIER,
         FRONTIER_THAWING,
         HOMESTEAD,

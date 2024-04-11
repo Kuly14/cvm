@@ -75,8 +75,8 @@ pub type InsertCreateOutcomeHandle<'a, EXT, DB> = Arc<
 
 /// Handles related to stack frames.
 pub struct ExecutionHandler<'a, EXT, DB: Database> {
-    /// Handles last frame return, modified gas for refund and
-    /// sets tx gas limit.
+    /// Handles last frame return, modified energy for refund and
+    /// sets tx energy limit.
     pub last_frame_return: LastFrameReturnHandle<'a, EXT, DB>,
     /// Frame call
     pub call: FrameCallHandle<'a, EXT, DB>,
@@ -108,7 +108,7 @@ impl<'a, EXT: 'a, DB: Database + 'a> ExecutionHandler<'a, EXT, DB> {
 }
 
 impl<'a, EXT, DB: Database> ExecutionHandler<'a, EXT, DB> {
-    /// Handle call return, depending on instruction result gas will be reimbursed or not.
+    /// Handle call return, depending on instruction result energy will be reimbursed or not.
     #[inline]
     pub fn last_frame_return(
         &self,
