@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [9.0.0](https://github.com/Kuly14/cvm/compare/revm-v8.0.0...revm-v9.0.0) - 2024-04-12
+
+### Added
+- Make ecrecover compatible with core blockchain ([#2](https://github.com/Kuly14/cvm/pull/2))
+- *(interpreter)* remove SPEC generic from gas calculation functions ([#1243](https://github.com/Kuly14/cvm/pull/1243))
+- *(interpreter)* test Host object-safety, allow `dyn Host` in instructions ([#1245](https://github.com/Kuly14/cvm/pull/1245))
+
+### Fixed
+- Rename gas to energy
+
+### Other
+- Rename keccak256 to sha3
+- Format
+- Make revm compatible with core blockchain
+
 ## [8.0.0](https://github.com/bluealloy/revm/compare/revm-v7.2.0...revm-v8.0.0) - 2024-04-02
 
 ### Added

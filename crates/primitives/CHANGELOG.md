@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0](https://github.com/Kuly14/cvm/compare/revm-primitives-v3.1.1...revm-primitives-v4.0.0) - 2024-04-12
+
+### Added
+- Make ecrecover compatible with core blockchain ([#2](https://github.com/Kuly14/cvm/pull/2))
+- *(interpreter)* remove SPEC generic from gas calculation functions ([#1243](https://github.com/Kuly14/cvm/pull/1243))
+
+### Fixed
+- Rename gas to energy
+
+### Other
+- Import IcanAddress from alloy to make it accessible through revm
+- Rename keccak256 to sha3
+- Format
+- Make revm compatible with core blockchain
+
 ## [3.1.1](https://github.com/bluealloy/revm/compare/revm-primitives-v3.1.0...revm-primitives-v3.1.1) - 2024-04-02
 
 ### Fixed
