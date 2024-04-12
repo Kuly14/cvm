@@ -21,7 +21,7 @@ pub mod specification;
 pub mod state;
 pub mod utilities;
 pub use alloy_primitives::{
-    self, address, b256, bytes, fixed_bytes, hex, hex_literal, ruint, uint, Address, Bytes,
+    self, address, b256, bytes, fixed_bytes, hex, hex_literal, ruint, uint, Address, IcanAddress, Bytes,
     FixedBytes, Log, LogData, B1368, B256, I256, U256,
 };
 pub use bitvec;
