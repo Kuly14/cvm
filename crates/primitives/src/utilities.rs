@@ -5,7 +5,7 @@ use crate::{
 pub use alloy_primitives::sha3;
 
 /// The Sha3 hash of the empty string `""`.
-pub const SHA_EMPTY: B256 =
+pub const SHA3_EMPTY: B256 =
     b256!("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a");
 
 /// Calculates the `excess_blob_energy` from the parent header's `blob_energy_used` and `excess_blob_energy`.

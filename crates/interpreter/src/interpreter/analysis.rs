@@ -1,7 +1,7 @@
 use crate::opcode;
 use crate::primitives::{
     bitvec::prelude::{bitvec, BitVec, Lsb0},
-    sha3, Bytecode, BytecodeState, Bytes, JumpMap, B256, SHA_EMPTY,
+    sha3, Bytecode, BytecodeState, Bytes, JumpMap, B256, SHA3_EMPTY,
 };
 use core::fmt;
 use std::sync::Arc;
@@ -128,7 +128,7 @@ impl BytecodeLocked {
     #[inline]
     pub fn hash_slow(&self) -> B256 {
         if self.is_empty() {
-            SHA_EMPTY
+            SHA3_EMPTY
         } else {
             sha3(self.original_bytecode_slice())
         }

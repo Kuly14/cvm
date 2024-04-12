@@ -1,6 +1,6 @@
 use crate::primitives::{hash_map::Entry, Bytecode, HashMap, U256};
 use crate::{
-    primitives::{Address, Env, Log, B256, SHA_EMPTY},
+    primitives::{Address, Env, Log, B256, SHA3_EMPTY},
     Host, SStoreResult, SelfDestructResult,
 };
 use std::vec::Vec;
@@ -65,7 +65,7 @@ impl Host for DummyHost {
 
     #[inline]
     fn code_hash(&mut self, __address: Address) -> Option<(B256, bool)> {
-        Some((SHA_EMPTY, false))
+        Some((SHA3_EMPTY, false))
     }
 
     #[inline]

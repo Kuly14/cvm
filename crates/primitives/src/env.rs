@@ -4,7 +4,7 @@ pub use handler_cfg::{CfgEnvWithHandlerCfg, EnvWithHandlerCfg, HandlerCfg};
 
 use crate::{
     calc_blob_energyprice, Account, Address, Bytes, InvalidHeader, InvalidTransaction, Spec,
-    SpecId, B256, ENERGY_PER_BLOB, MAX_BLOB_NUMBER_PER_BLOCK, MAX_INITCODE_SIZE, SHA_EMPTY, U256,
+    SpecId, B256, ENERGY_PER_BLOB, MAX_BLOB_NUMBER_PER_BLOCK, MAX_INITCODE_SIZE, SHA3_EMPTY, U256,
     VERSIONED_HASH_VERSION_KZG,
 };
 use core::cmp::{min, Ordering};
@@ -198,7 +198,7 @@ impl Env {
         // EIP-3607: Reject transactions from senders with deployed code
         // This EIP is introduced after london but there was no collision in past
         // so we can leave it enabled always
-        if !self.cfg.is_eip3607_disabled() && account.info.code_hash != SHA_EMPTY {
+        if !self.cfg.is_eip3607_disabled() && account.info.code_hash != SHA3_EMPTY {
             return Err(InvalidTransaction::RejectCallerWithCode);
         }
 

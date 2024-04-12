@@ -1,7 +1,7 @@
 use crate::interpreter::{InstructionResult, SelfDestructResult};
 use crate::primitives::{
     db::Database, hash_map::Entry, Account, Address, Bytecode, EVMError, HashMap, HashSet, Log,
-    SpecId::*, State, StorageSlot, TransientStorage, PRECOMPILE3, SHA_EMPTY, U256,
+    SpecId::*, State, StorageSlot, TransientStorage, PRECOMPILE3, SHA3_EMPTY, U256,
 };
 use core::mem;
 use revm_interpreter::primitives::SpecId;
@@ -249,7 +249,7 @@ impl JournaledState {
         // Bytecode is not empty.
         // Nonce is not zero
         // Account is not precompile.
-        if account.info.code_hash != SHA_EMPTY
+        if account.info.code_hash != SHA3_EMPTY
             || account.info.nonce != 0
             || self.warm_preloaded_addresses.contains(&address)
         {
@@ -391,7 +391,7 @@ impl JournaledState {
                 }
                 JournalEntry::CodeChange { address } => {
                     let acc = state.get_mut(&address).unwrap();
-                    acc.info.code_hash = SHA_EMPTY;
+                    acc.info.code_hash = SHA3_EMPTY;
                     acc.info.code = None;
                 }
             }
@@ -605,7 +605,7 @@ impl JournaledState {
     ) -> Result<(&mut Account, bool), EVMError<DB::Error>> {
         let (acc, is_cold) = self.load_account(address, db)?;
         if acc.info.code.is_none() {
-            if acc.info.code_hash == SHA_EMPTY {
+            if acc.info.code_hash == SHA3_EMPTY {
                 let empty = Bytecode::new();
                 acc.info.code = Some(empty);
             } else {

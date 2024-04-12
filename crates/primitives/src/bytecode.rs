@@ -1,4 +1,4 @@
-use crate::{hex, sha3, Bytes, B256, SHA_EMPTY};
+use crate::{hex, sha3, Bytes, B256, SHA3_EMPTY};
 use bitvec::{
     prelude::{bitvec, Lsb0},
     vec::BitVec,
@@ -90,7 +90,7 @@ impl Bytecode {
     /// Calculate hash of the bytecode.
     pub fn hash_slow(&self) -> B256 {
         if self.is_empty() {
-            SHA_EMPTY
+            SHA3_EMPTY
         } else {
             sha3(&self.original_bytes())
         }

@@ -1,6 +1,6 @@
 use crate::{
     energy,
-    primitives::{Spec, B256, SHA_EMPTY, U256},
+    primitives::{Spec, B256, SHA3_EMPTY, U256},
     Host, InstructionResult, Interpreter,
 };
 
@@ -9,7 +9,7 @@ pub fn sha3<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
     let len = as_usize_or_fail!(interpreter, len);
     energy_or_fail!(interpreter, energy::sha3_cost(len as u64));
     let hash = if len == 0 {
-        SHA_EMPTY
+        SHA3_EMPTY
     } else {
         let from = as_usize_or_fail!(interpreter, from);
         resize_memory!(interpreter, from, len);

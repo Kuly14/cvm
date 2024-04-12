@@ -1,4 +1,4 @@
-use crate::{Address, Bytecode, HashMap, B256, SHA_EMPTY, U256};
+use crate::{Address, Bytecode, HashMap, B256, SHA3_EMPTY, U256};
 use bitflags::bitflags;
 use core::hash::{Hash, Hasher};
 
@@ -201,7 +201,7 @@ impl Default for AccountInfo {
     fn default() -> Self {
         Self {
             balance: U256::ZERO,
-            code_hash: SHA_EMPTY,
+            code_hash: SHA3_EMPTY,
             code: Some(Bytecode::new()),
             nonce: 0,
         }
@@ -262,7 +262,7 @@ impl AccountInfo {
     }
 
     /// Return bytecode hash associated with this account.
-    /// If account does not have code, it return's `SHA_EMPTY` hash.
+    /// If account does not have code, it return's `SHA3_EMPTY` hash.
     pub fn code_hash(&self) -> B256 {
         self.code_hash
     }
@@ -270,7 +270,7 @@ impl AccountInfo {
     /// Returns true if the code hash is the Sha3 hash of the empty string `""`.
     #[inline]
     pub fn is_empty_code_hash(&self) -> bool {
-        self.code_hash == SHA_EMPTY
+        self.code_hash == SHA3_EMPTY
     }
 
     /// Take bytecode from account. Code will be set to None.
@@ -288,7 +288,7 @@ impl AccountInfo {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Account, SHA_EMPTY, U256};
+    use crate::{Account, SHA3_EMPTY, U256};
 
     #[test]
     fn account_is_empty_balance() {
@@ -325,7 +325,7 @@ mod tests {
         account.info.code_hash = [0; 32].into();
         assert!(account.is_empty());
 
-        account.info.code_hash = SHA_EMPTY;
+        account.info.code_hash = SHA3_EMPTY;
         assert!(account.is_empty());
     }
 
