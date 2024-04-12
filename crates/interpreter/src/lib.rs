@@ -18,6 +18,7 @@ pub mod energy;
 mod host;
 mod inner_models;
 mod instruction_result;
+mod memory;
 pub mod instructions;
 pub mod interpreter;
 
@@ -34,6 +35,7 @@ pub use interpreter::{
     InterpreterResult, SharedMemory, Stack, EMPTY_SHARED_MEMORY, STACK_LIMIT,
 };
 pub use primitives::{MAX_CODE_SIZE, MAX_INITCODE_SIZE};
+pub use memory::Memory;
 
 #[doc(hidden)]
 pub use revm_primitives as primitives;
